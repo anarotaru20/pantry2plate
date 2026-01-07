@@ -1,7 +1,8 @@
 const express = require("express");
 const cors = require("cors");
 const testRoute = require("./routes/test.js");
-const { logger } = require("./config/logger")
+const userRoutes = require('./routes/users');
+const { logger } = require("./config/logger");
 require("dotenv").config();
 require("./config/db");
 
@@ -21,6 +22,10 @@ app.use((req, res, next) => {
 // test route
 app.use("/", testRoute);
 app.use("/db-test", testRoute);
+
+// test users route
+app.use("/users", userRoutes);
+
 
 // start server
 app.listen(PORT, () => {
