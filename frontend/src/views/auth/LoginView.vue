@@ -1,5 +1,9 @@
 <script setup>
 import { ref } from "vue"
+import { useRouter } from "vue-router"
+import { login } from "../../services/auth"
+
+const router = useRouter()
 
 const email = ref("")
 const password = ref("")
@@ -11,28 +15,25 @@ const handleLogin = async () => {
   loading.value = true
 
   try {
-    const res = await fetch("http://localhost:5000/users/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: email.value, password: password.value })
-    })
+    await login(email.value.trim(), password.value)
 
-    const data = await res.json()
-    message.value = data.message || "Done"
+    message.value = "Login successful"
+    router.push("/profile") // sau unde vrei după login
   } catch (e) {
-    message.value = "Error connecting to server"
+    message.value = e?.message || "Login failed"
   } finally {
     loading.value = false
   }
 }
 </script>
 
+
 <template>
   <v-container fluid class="auth">
     <v-row class="auth-row" align="center" justify="center">
       <v-col cols="12" md="6" class="d-none d-md-block">
         <div class="left">
-          <v-img src="/logo.png" max-width="220" class="logo mb-6" />
+          <v-img src="/logo3.png" max-width="220" class="logo mb-6" />
 
           <div class="title">
             Welcome back to <span class="green">Pantry</span><span class="dot">2</span><span class="orange">Plate</span>.

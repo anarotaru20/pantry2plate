@@ -5,7 +5,7 @@ const props = defineProps({
   title: { type: String, required: true },
   items: { type: Array, required: true },
   intervalMs: { type: Number, default: 3200 },
-  numbered: { type: Boolean, default: false }
+  numbered: { type: Boolean, default: false },
 })
 
 const active = ref(0)
@@ -80,94 +80,97 @@ onBeforeUnmount(() => timer && clearInterval(timer))
 
 <style scoped>
 .cf {
-  margin: 18px 0 22px;
+  margin: 0;
   text-align: center;
 }
 
 .cf-title {
-  font-size: 1.25rem;
-  font-weight: 900;
-  margin-bottom: 12px;
+  font-size: 1.15rem;
+  font-weight: 800;
+  margin-bottom: 8px;
 }
 
-/* STAGE */
 .cf-stage {
   position: relative;
   display: grid;
   place-items: center;
-  min-height: 170px;
+  min-height: 140px;
 }
 
+/* CARD */
 .cf-card {
   position: absolute;
-  width: min(760px, 92%);
-  padding: 16px 18px;
-  border-radius: 18px;
-  background: rgba(255, 255, 255, 0.72);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(0,0,0,0.06);
-  box-shadow: 0 14px 30px rgba(0,0,0,0.08);
-  transition: transform 420ms ease, opacity 420ms ease;
+  width: min(440px, 88%);
+  padding: 14px 18px;
+  border-radius: 16px;
+  background: #ffffff;
+  border: none;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.08);
+  transition:
+    transform 420ms ease,
+    opacity 420ms ease;
 }
 
 .cf-center {
-  transform: scale(1);
   z-index: 3;
+  transform: scale(1);
+  opacity: 1;
 }
 
 .cf-left {
-  transform: translateX(-44%) scale(0.88);
-  opacity: 0.42;
+  transform: translateX(-46%) scale(0.9);
+  opacity: 0.35;
   cursor: pointer;
 }
 
 .cf-right {
-  transform: translateX(44%) scale(0.88);
-  opacity: 0.42;
+  transform: translateX(46%) scale(0.9);
+  opacity: 0.35;
   cursor: pointer;
 }
 
+/* BADGE */
 .cf-badge {
-  width: 28px;
-  height: 28px;
-  border-radius: 10px;
+  width: 24px;
+  height: 24px;
+  border-radius: 8px;
   display: grid;
   place-items: center;
-  font-weight: 900;
-  font-size: 0.85rem;
+  font-weight: 800;
+  font-size: 0.75rem;
   color: #fff;
-  background: linear-gradient(90deg, #ec407a, #fb8c00);
-  margin: 0 auto 10px;
+  background: #ff9800;
+  margin: 0 auto 8px;
 }
 
 .cf-card-title {
-  font-size: 1.05rem;
-  font-weight: 900;
-  margin-bottom: 6px;
+  font-size: 0.95rem;
+  font-weight: 800;
+  margin-bottom: 4px;
 }
 
 .cf-card-text {
-  font-size: 0.95rem;
-  opacity: 0.85;
-  line-height: 1.45;
+  font-size: 0.88rem;
+  opacity: 0.75;
+  line-height: 1.4;
 }
 
 /* CONTROLS */
 .cf-controls {
-  margin-top: 12px;
+  margin-top: 6px;
+  padding-bottom: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 12px;
+  gap: 10px;
 }
 
 .cf-arrow {
   background: none;
   border: none;
-  font-size: 1.15rem;
+  font-size: 1.05rem;
   cursor: pointer;
-  opacity: 0.55;
-  padding: 6px 8px;
+  opacity: 0.45;
 }
 
 .cf-arrow:hover {
@@ -176,41 +179,22 @@ onBeforeUnmount(() => timer && clearInterval(timer))
 
 .cf-dots {
   display: flex;
-  gap: 8px;
+  gap: 6px;
 }
 
 .cf-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 999px;
-  border: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
   background: #000;
-  opacity: 0.22;
-  cursor: pointer;
+  opacity: 0.25;
+  border: none;
 }
 
 .cf-dot.active {
   opacity: 1;
-  transform: scale(1.25);
+  transform: scale(1.3);
 }
 
-@media (max-width: 900px) {
-  .cf-stage {
-    min-height: 190px;
-  }
 
-  .cf-card {
-    width: min(640px, 92%);
-  }
-
-  .cf-left,
-  .cf-right {
-    opacity: 0.18;
-    transform: translateX(-26%) scale(0.94);
-  }
-
-  .cf-right {
-    transform: translateX(26%) scale(0.94);
-  }
-}
 </style>
