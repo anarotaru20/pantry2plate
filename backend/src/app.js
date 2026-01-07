@@ -7,7 +7,7 @@ require("dotenv").config();
 require("./config/db");
 
 const app = express();
-const PORT = process.env.PORT || 4500;
+const PORT = 5000;
 
 // middleware
 app.use(cors());
@@ -20,11 +20,11 @@ app.use((req, res, next) => {
 });
 
 // test route
-app.use("/", testRoute);
-app.use("/db-test", testRoute);
+// app.use("/", testRoute);
+// app.use("/db-test", testRoute);
 
 // test users route
-app.use("/users", userRoutes);
+app.use("/", userRoutes);
 
 
 // start server

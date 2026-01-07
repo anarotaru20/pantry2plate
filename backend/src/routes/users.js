@@ -1,40 +1,11 @@
 const express = require("express")
 const router = express.Router()
 
-// POST /users/register - register user
-router.post("/register", async (req, res) => {
-  try {
-    res.status(201).json({
-      success: true,
-      message: "User registered successfully!",
-      data: {
-        email: req.body.email || null
-      }
-    })
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    })
-  }
-})
+const { register, login, profile } = require("../controllers/users")
+const requireAuth = require("../middleware/auth")
 
-// POST /users/login - login user
-router.post("/login", async (req, res) => {
-  try {
-    res.status(200).json({
-      success: true,
-      message: "User logged in successfully!",
-      data: {
-        email: req.body.email || null
-      }
-    })
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    })
-  }
-})
+router.post("/register", register)
+router.post("/login", login)
+router.get("/profile", requireAuth, profile)
 
-module.exports = router
+module.exports = router;
