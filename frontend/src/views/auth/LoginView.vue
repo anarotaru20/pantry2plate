@@ -19,7 +19,7 @@ const handleLogin = async () => {
 
   try {
     await login(email.value.trim(), password.value)
-    router.push('/profile')
+    router.push('/plants')
   } catch (e) {
     message.value = e?.message || 'Login failed'
   } finally {
