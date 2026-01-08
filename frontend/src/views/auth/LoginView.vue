@@ -1,74 +1,84 @@
 <script setup>
-import { ref } from "vue"
-import { useRouter } from "vue-router"
-import { login } from "../../services/auth"
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { login } from '../../services/auth'
+import Navbar from '@/components/Navbar.vue'
 
 const router = useRouter()
 
-const email = ref("")
-const password = ref("")
-const message = ref("")
+const email = ref('')
+const password = ref('')
+const showPassword = ref(false)
+
+const message = ref('')
 const loading = ref(false)
 
 const handleLogin = async () => {
-  message.value = ""
+  message.value = ''
   loading.value = true
 
   try {
     await login(email.value.trim(), password.value)
-
-    message.value = "Login successful"
-    router.push("/profile") // sau unde vrei după login
+    router.push('/profile')
   } catch (e) {
-    message.value = e?.message || "Login failed"
+    message.value = e?.message || 'Login failed'
   } finally {
     loading.value = false
   }
 }
 </script>
 
-
 <template>
   <v-container fluid class="auth">
+    <Navbar>
+      <template #actions>
+        <div class="actions">
+          <v-btn variant="outlined" class="btn-pill btn-orange-outline" to="/"> Explore </v-btn>
+        </div>
+      </template>
+    </Navbar>
+
     <v-row class="auth-row" align="center" justify="center">
       <v-col cols="12" md="6" class="d-none d-md-block">
         <div class="left">
-          <v-img src="/logo3.png" max-width="220" class="logo mb-6" />
+          <v-img src="/logo_img.png" max-width="320" class="logo mb-6" />
 
           <div class="title">
-            Welcome back to <span class="green">Pantry</span><span class="dot">2</span><span class="orange">Plate</span>.
+            Welcome back to <span class="green">Seed</span><span class="dot">2</span
+            ><span class="orange">Bloom</span>.
           </div>
 
           <div class="subtitle">
-            Log in to track ingredients, find recipe matches, and keep your shopping list smart.
+            Log in to track watering, light, and care notes — and keep your plant routine calm and
+            consistent.
           </div>
 
           <div class="badges mt-6">
             <div class="badge chip-green" style="animation-delay: 240ms">
-              <v-icon size="18" class="mr-2">mdi-fridge-outline</v-icon>
-              Pantry tracking
+              <v-icon size="18" class="mr-2">mdi-sprout</v-icon>
+              Plant tracking
             </div>
             <div class="badge chip-orange" style="animation-delay: 360ms">
-              <v-icon size="18" class="mr-2">mdi-silverware-fork-knife</v-icon>
-              Recipe matches
+              <v-icon size="18" class="mr-2">mdi-water</v-icon>
+              Watering routine
             </div>
             <div class="badge chip-red" style="animation-delay: 480ms">
-              <v-icon size="18" class="mr-2">mdi-cart-outline</v-icon>
-              Smart grocery list
+              <v-icon size="18" class="mr-2">mdi-weather-sunny</v-icon>
+              Light & placement
             </div>
           </div>
         </div>
       </v-col>
 
-      <v-col cols="12" sm="10" md="5" lg="4">
+      <v-col cols="12" sm="10" md="6" lg="5" class="right-col">
         <v-card class="card" elevation="4">
           <div class="top">
-            <v-avatar size="58" color="primary" variant="tonal" class="mb-3">
+            <v-avatar size="58" color="green" variant="tonal" class="mb-3">
               <v-icon size="28">mdi-lock-outline</v-icon>
             </v-avatar>
 
             <div class="card-title">Login</div>
-            <div class="card-subtitle">Use your account to continue.</div>
+            <div class="card-subtitle">Continue your plant care journey.</div>
           </div>
 
           <v-text-field
@@ -85,48 +95,37 @@ const handleLogin = async () => {
             v-model="password"
             label="Password"
             prepend-inner-icon="mdi-lock-outline"
-            type="password"
+            :type="showPassword ? 'text' : 'password'"
             variant="outlined"
             rounded="lg"
-            class="mb-2"
+            class="mb-4"
             autocomplete="current-password"
+            :append-inner-icon="showPassword ? 'mdi-eye-off-outline' : 'mdi-eye-outline'"
+            @click:append-inner="showPassword = !showPassword"
           />
 
-          <div class="d-flex justify-space-between align-center mb-4">
-            <v-checkbox density="compact" hide-details label="Remember me" />
-            <RouterLink to="/register" class="link">No account?</RouterLink>
-          </div>
-
           <v-btn
-            color="primary"
             size="large"
             block
             rounded="lg"
-            class="cta"
+            class="btn-pill btn-green cta"
             :loading="loading"
-            :disabled="!email"
             @click="handleLogin"
           >
             Login
-            <v-icon end>mdi-arrow-right</v-icon>
           </v-btn>
 
-          <v-alert
-            v-if="message"
-            class="mt-4"
-            variant="tonal"
-            type="success"
-            rounded="lg"
-          >
+          <v-alert v-if="message" class="mt-4" variant="tonal" type="error" rounded="lg">
             {{ message }}
           </v-alert>
 
-          <div class="bottom text-center mt-5">
-            <span class="text-medium-emphasis">New here?</span>
-            <RouterLink to="/register" class="link-strong">Create an account</RouterLink>
+          <div class="bottom text-center mt-6">
+            <span class="text-medium-emphasis">New to the jungle?</span>
+            <RouterLink to="/register" class="link-strong link-yellow"
+              >Create your account</RouterLink
+            >
           </div>
         </v-card>
-
       </v-col>
     </v-row>
   </v-container>
@@ -135,20 +134,25 @@ const handleLogin = async () => {
 <style scoped>
 .auth {
   min-height: 100vh;
-  padding: 64px 24px;
   background:
-    radial-gradient(1200px 600px at 18% 0%, rgba(76, 175, 80, 0.12) 0%, transparent 58%),
-    radial-gradient(1000px 520px at 82% 16%, rgba(251, 140, 0, 0.12) 0%, transparent 55%),
-    radial-gradient(900px 520px at 60% 40%, rgba(229, 57, 53, 0.07) 0%, transparent 60%),
-    linear-gradient(180deg, #ffffff, #ffffff);
+    radial-gradient(1200px 700px at 12% 20%, rgba(76, 175, 80, 0.14), transparent 55%),
+    radial-gradient(1100px 600px at 88% 22%, rgba(255, 152, 0, 0.16), transparent 58%), #fff;
 }
 
 .auth-row {
   min-height: calc(100vh - 128px);
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+.right-col {
+  padding-left: 18px;
+  padding-right: 18px;
 }
 
 .left {
   max-width: 560px;
+  padding-left: 18px;
   animation: fadeUp 650ms ease both;
 }
 
@@ -156,6 +160,38 @@ const handleLogin = async () => {
   font-size: 2.1rem;
   font-weight: 900;
   line-height: 1.05;
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.btn-pill {
+  border-radius: 999px;
+  text-transform: none;
+  font-weight: 850;
+  letter-spacing: 0.2px;
+}
+
+.btn-green {
+  background: #2e7d32;
+  color: #fff;
+  box-shadow: 0 12px 26px rgba(46, 125, 50, 0.22);
+}
+
+.btn-green:hover {
+  filter: brightness(1.02);
+}
+
+.btn-orange-outline {
+  border: 2px solid #fb8c00;
+  color: #fb8c00;
+}
+
+.btn-orange-outline:hover {
+  background: rgba(251, 140, 0, 0.1);
 }
 
 .subtitle {
@@ -181,24 +217,49 @@ const handleLogin = async () => {
 .badges {
   display: flex;
   gap: 10px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
 }
 
 .badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
+  justify-content: center;
   padding: 10px 12px;
+  font-size: 1rem;
+  white-space: nowrap;
   border-radius: 16px;
   font-weight: 700;
   opacity: 0;
-  animation: fadeUp 650ms ease both;
+  animation:
+    fadeUp 650ms ease both,
+    floatSoft 3.6s ease-in-out infinite;
+}
+.badge:nth-child(1) {
+  animation-delay: 240ms, 0ms;
+}
+.badge:nth-child(2) {
+  animation-delay: 360ms, 180ms;
+}
+.badge:nth-child(3) {
+  animation-delay: 480ms, 360ms;
+}
+@keyframes cardIn {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.985);
+    filter: blur(2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
 }
 
 .card {
-  border-radius: 22px;
-  padding: 22px;
-  animation: floatSoft 3.6s ease-in-out infinite;
+  border-radius: 24px;
+  padding: 34px 36px;
+  min-height: 430px;
+  animation: cardIn 520ms ease both;
+  margin-top: 18px;
 }
 
 .top {
@@ -214,17 +275,6 @@ const handleLogin = async () => {
 .card-subtitle {
   font-size: 0.95rem;
   opacity: 0.75;
-}
-
-.link {
-  text-decoration: none;
-  font-weight: 700;
-  color: #1f2937;
-  opacity: 0.85;
-}
-
-.link:hover {
-  opacity: 1;
 }
 
 .cta {
@@ -243,15 +293,12 @@ const handleLogin = async () => {
   color: #2e7d32;
 }
 
-.mini-note {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  font-size: 0.9rem;
-  opacity: 0.8;
-  animation: fadeUp 650ms ease both;
-  animation-delay: 180ms;
+.link-yellow {
+  color: #fb8c00;
+}
+
+.link-yellow:hover {
+  text-decoration: underline;
 }
 
 .chip-green {

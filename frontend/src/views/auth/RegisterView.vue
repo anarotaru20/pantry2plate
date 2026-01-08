@@ -2,7 +2,7 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { register as registerApi } from '../../services/auth'
-
+import Navbar from '@/components/Navbar.vue'
 
 const router = useRouter()
 
@@ -21,8 +21,18 @@ const showPassword = ref(false)
 const showConfirmPassword = ref(false)
 
 const months = [
-  'January','February','March','April','May','June',
-  'July','August','September','October','November','December'
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
 ]
 
 const monthIndex = computed(() => months.indexOf(month.value))
@@ -48,7 +58,9 @@ const canSubmit = computed(() => {
 const hashPassword = async (plain) => {
   const enc = new TextEncoder().encode(plain)
   const buf = await crypto.subtle.digest('SHA-256', enc)
-  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('')
+  return Array.from(new Uint8Array(buf))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('')
 }
 
 const handleRegister = async () => {
@@ -70,12 +82,10 @@ const handleRegister = async () => {
       email: email.value.trim(),
       passwordHash,
       birthDate: birthDateIso.value,
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
     }
 
     await registerApi(email.value.trim(), password.value, profile)
-
-    message.value = 'Account created'
     router.push('/login')
   } catch (e) {
     message.value = e?.message || 'Error connecting to server'
@@ -87,44 +97,24 @@ const handleRegister = async () => {
 
 <template>
   <v-container fluid class="auth">
-    <v-row class="auth-row" align="center" justify="center">
-      <v-col cols="12" md="6" class="d-none d-md-block">
-        <div class="left">
-          <v-img src="/logo.png" max-width="220" class="logo mb-6" />
-
-          <div class="title">
-            Create your <span class="green">Pantry</span><span class="dot">2</span
-            ><span class="orange">Plate</span> account.
-          </div>
-
-          <div class="subtitle">Organize your kitchen. Cook smarter. Waste less.</div>
-
-          <div class="badges mt-6">
-            <div class="badge chip-green">
-              <v-icon size="18">mdi-fridge-outline</v-icon>
-              Pantry control
-            </div>
-            <div class="badge chip-orange">
-              <v-icon size="18">mdi-lightbulb-on-outline</v-icon>
-              Smart recipes
-            </div>
-            <div class="badge chip-red">
-              <v-icon size="18">mdi-cart-outline</v-icon>
-              Shopping list
-            </div>
-          </div>
+    <Navbar>
+      <template #actions>
+        <div class="actions">
+          <v-btn variant="outlined" class="btn-pill btn-orange-outline" to="/"> Explore </v-btn>
         </div>
-      </v-col>
+      </template>
+    </Navbar>
 
+    <v-row class="auth-row row-gap" align="center" justify="center">
       <v-col cols="12" sm="10" md="5" lg="4">
         <v-card class="card" elevation="4">
           <div class="top">
-            <v-avatar size="58" color="primary" variant="tonal">
+            <v-avatar size="58" color="green" variant="tonal" class="mb-3">
               <v-icon size="28">mdi-account-plus-outline</v-icon>
             </v-avatar>
 
-            <div class="card-title">Register</div>
-            <div class="card-subtitle">Create your account</div>
+            <div class="card-title">Create account</div>
+            <div class="card-subtitle">Start your plant care space in seconds.</div>
           </div>
 
           <v-row dense>
@@ -149,7 +139,7 @@ const handleRegister = async () => {
             </v-col>
           </v-row>
 
-          <v-row dense class="mb-3">
+          <v-row dense class="mb-2">
             <v-col cols="4">
               <v-select
                 v-model="day"
@@ -220,17 +210,15 @@ const handleRegister = async () => {
           </v-row>
 
           <v-btn
-            color="primary"
             size="large"
             block
             rounded="lg"
-            class="cta mt-4"
+            class="btn-pill btn-green cta mt-4"
             :loading="loading"
             :disabled="!canSubmit"
             @click="handleRegister"
           >
-            Create account
-            <v-icon end>mdi-arrow-right</v-icon>
+            Start growing
           </v-btn>
 
           <v-alert
@@ -244,10 +232,39 @@ const handleRegister = async () => {
           </v-alert>
 
           <div class="bottom text-center mt-5">
-            <span>Already have an account?</span>
-            <RouterLink to="/login" class="link-strong">Sign in</RouterLink>
+            <span>Already part of the greenhouse?</span>
+            <RouterLink to="/login" class="link-strong link-yellow">Sign in</RouterLink>
           </div>
         </v-card>
+      </v-col>
+
+      <v-col cols="12" md="4" class="d-none d-md-block">
+        <div class="right">
+          <v-img src="/logo_img.png" max-width="320" class="logo mb-6" />
+
+          <div class="title">
+            Create your <span class="green">Seed</span><span class="dot">2</span
+            ><span class="orange">Bloom</span>
+            account.
+          </div>
+
+          <div class="subtitle">Track watering, light, and care notes. Keep every plant happy.</div>
+
+          <div class="badges mt-6">
+            <div class="badge chip-green">
+              <v-icon size="18">mdi-sprout</v-icon>
+              Plant profiles
+            </div>
+            <div class="badge chip-orange">
+              <v-icon size="18">mdi-water</v-icon>
+              Watering routine
+            </div>
+            <div class="badge chip-red">
+              <v-icon size="18">mdi-weather-sunny</v-icon>
+              Light & placement
+            </div>
+          </div>
+        </div>
       </v-col>
     </v-row>
   </v-container>
@@ -265,12 +282,54 @@ const handleRegister = async () => {
 }
 
 .auth-row {
-  min-height: calc(100vh - 128px);
+  min-height: calc(100vh - 180px);
 }
 
-.left {
+.row-gap {
+  column-gap: 28px;
+}
+
+.card {
+  border-radius: 22px;
+  padding: 34px 36px;
+  animation: cardIn 520ms ease both;
+}
+@keyframes cardIn {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.985);
+    filter: blur(2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+.top {
+  text-align: center;
+  margin-bottom: 14px;
+}
+
+.card-title {
+  font-size: 1.55rem;
+  font-weight: 900;
+}
+
+.card-subtitle {
+  font-size: 0.95rem;
+  opacity: 0.75;
+}
+
+.right {
   max-width: 560px;
+  text-align: right;
   animation: fadeUp 650ms ease both;
+}
+
+.right .logo {
+  margin-left: auto;
 }
 
 .title {
@@ -284,6 +343,7 @@ const handleRegister = async () => {
   font-size: 1.05rem;
   opacity: 0.88;
   max-width: 520px;
+  margin-left: auto;
 }
 
 .green {
@@ -303,6 +363,7 @@ const handleRegister = async () => {
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .badge {
@@ -313,32 +374,21 @@ const handleRegister = async () => {
   border-radius: 16px;
   font-weight: 700;
   opacity: 0;
-  animation: fadeUp 650ms ease both;
+  animation:
+    fadeUp 650ms ease both,
+    floatSoft 3.6s ease-in-out infinite;
 }
 
-.card {
-  border-radius: 22px;
-  padding: 22px;
-  animation: floatSoft 3.6s ease-in-out infinite;
+.badge:nth-child(1) {
+  animation-delay: 240ms, 0ms;
 }
 
-.top {
-  text-align: center;
-  margin-bottom: 14px;
+.badge:nth-child(2) {
+  animation-delay: 360ms, 180ms;
 }
 
-.card-title {
-  font-size: 1.55rem;
-  font-weight: 900;
-}
-
-.card-subtitle {
-  font-size: 0.95rem;
-  opacity: 0.75;
-}
-
-.cta {
-  animation: pulse 2.8s ease-in-out infinite;
+.badge:nth-child(3) {
+  animation-delay: 480ms, 360ms;
 }
 
 .bottom {
@@ -353,15 +403,8 @@ const handleRegister = async () => {
   color: #2e7d32;
 }
 
-.mini-note {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  font-size: 0.9rem;
-  opacity: 0.8;
-  animation: fadeUp 650ms ease both;
-  animation-delay: 180ms;
+.link-yellow {
+  color: #fb8c00;
 }
 
 .chip-green {
@@ -380,6 +423,36 @@ const handleRegister = async () => {
   background: rgba(229, 57, 53, 0.14);
   color: #e53935;
   border: 1px solid rgba(229, 57, 53, 0.18);
+}
+
+.btn-pill {
+  border-radius: 999px;
+  text-transform: none;
+  font-weight: 850;
+  letter-spacing: 0.2px;
+}
+
+.btn-green {
+  background: #2e7d32;
+  color: #fff;
+  box-shadow: 0 12px 26px rgba(46, 125, 50, 0.22);
+}
+
+.btn-green:hover {
+  filter: brightness(1.02);
+}
+
+.btn-orange-outline {
+  border: 2px solid #fb8c00;
+  color: #fb8c00;
+}
+
+.btn-orange-outline:hover {
+  background: rgba(251, 140, 0, 0.1);
+}
+
+.cta {
+  animation: pulse 2.8s ease-in-out infinite;
 }
 
 @keyframes fadeUp {

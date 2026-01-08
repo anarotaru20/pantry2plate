@@ -5,7 +5,6 @@ const props = defineProps({
   title: { type: String, required: true },
   items: { type: Array, required: true },
   intervalMs: { type: Number, default: 3200 },
-  numbered: { type: Boolean, default: false },
 })
 
 const active = ref(0)
@@ -42,19 +41,25 @@ onBeforeUnmount(() => timer && clearInterval(timer))
 
     <div class="cf-stage" v-if="count">
       <div class="cf-card cf-left" @click="prev">
-        <div v-if="numbered" class="cf-badge">{{ prevIndex + 1 }}</div>
+        <div v-if="list[prevIndex]?.icon" class="cf-badge">
+          <v-icon size="18">{{ list[prevIndex].icon }}</v-icon>
+        </div>
         <div class="cf-card-title">{{ list[prevIndex].title }}</div>
         <div class="cf-card-text">{{ list[prevIndex].text }}</div>
       </div>
 
       <div class="cf-card cf-center">
-        <div v-if="numbered" class="cf-badge">{{ active + 1 }}</div>
+        <div v-if="list[active]?.icon" class="cf-badge">
+          <v-icon size="18">{{ list[active].icon }}</v-icon>
+        </div>
         <div class="cf-card-title">{{ list[active].title }}</div>
         <div class="cf-card-text">{{ list[active].text }}</div>
       </div>
 
       <div class="cf-card cf-right" @click="next">
-        <div v-if="numbered" class="cf-badge">{{ nextIndex + 1 }}</div>
+        <div v-if="list[nextIndex]?.icon" class="cf-badge">
+          <v-icon size="18">{{ list[nextIndex].icon }}</v-icon>
+        </div>
         <div class="cf-card-title">{{ list[nextIndex].title }}</div>
         <div class="cf-card-text">{{ list[nextIndex].text }}</div>
       </div>
@@ -97,14 +102,12 @@ onBeforeUnmount(() => timer && clearInterval(timer))
   min-height: 140px;
 }
 
-/* CARD */
 .cf-card {
   position: absolute;
   width: min(440px, 88%);
   padding: 14px 18px;
   border-radius: 16px;
   background: #ffffff;
-  border: none;
   box-shadow: 0 8px 22px rgba(0, 0, 0, 0.08);
   transition:
     transform 420ms ease,
@@ -129,17 +132,14 @@ onBeforeUnmount(() => timer && clearInterval(timer))
   cursor: pointer;
 }
 
-/* BADGE */
 .cf-badge {
-  width: 24px;
-  height: 24px;
-  border-radius: 8px;
+  width: 26px;
+  height: 26px;
+  border-radius: 5px;
   display: grid;
   place-items: center;
-  font-weight: 800;
-  font-size: 0.75rem;
+  background: #2e7d32;
   color: #fff;
-  background: #ff9800;
   margin: 0 auto 8px;
 }
 
@@ -155,10 +155,8 @@ onBeforeUnmount(() => timer && clearInterval(timer))
   line-height: 1.4;
 }
 
-/* CONTROLS */
 .cf-controls {
   margin-top: 6px;
-  padding-bottom: 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -195,6 +193,4 @@ onBeforeUnmount(() => timer && clearInterval(timer))
   opacity: 1;
   transform: scale(1.3);
 }
-
-
 </style>

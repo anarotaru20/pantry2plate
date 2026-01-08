@@ -1,52 +1,64 @@
 <script setup>
 import AutoCardCarousel from '../components/AutoCardCarousel.vue'
+import Navbar from '../components/Navbar.vue'
+import Footer from '../components/Footer.vue'
 
 const carouselItems = [
-  { title: 'Track your pantry', text: 'Organize ingredients, quantities, and expiration dates.' },
-  { title: 'Add items fast', text: 'Quickly log what you have in your pantry or fridge.' },
-  { title: 'Get recipe matches', text: 'Discover recipes based on available ingredients.' },
-  { title: 'Smart recommendations', text: 'Filter recipes by preferences and diet.' },
-  { title: 'Auto shopping list', text: 'Generate a list with missing ingredients.' },
   {
-    title: 'Buy only what you need',
-    text: 'Your list updates automatically as your pantry changes.',
+    icon: 'mdi-sprout',
+    title: 'Track your plants',
+    text: 'Keep a simple log of care, growth, and notes for each plant.',
+  },
+  {
+    icon: 'mdi-water',
+    title: 'Watering reminders',
+    text: 'Stay consistent with watering schedules without overdoing it.',
+  },
+  {
+    icon: 'mdi-weather-sunny',
+    title: 'Light & placement',
+    text: 'Remember the best spot for each plant based on light needs.',
+  },
+  {
+    icon: 'mdi-flask-outline',
+    title: 'Fertilize smarter',
+    text: 'Track feeding dates and what worked best for healthier leaves.',
+  },
+  {
+    icon: 'mdi-leaf',
+    title: 'Care recommendations',
+    text: 'Get tips based on your plants and your routine.',
+  },
+  {
+    icon: 'mdi-format-list-checks',
+    title: 'Supplies checklist',
+    text: 'Generate a list for soil, pots, nutrients, and anything you’re missing.',
   },
 ]
 </script>
 
 <template>
   <v-container fluid class="landing">
-    <v-app-bar class="topbar" elevation="0">
-      <v-container class="bar-inner">
-        <div class="brand">
-          <v-img src="/logotxt.png" class="brand-logo" contain />
-          <div class="brand-text">
-            <div class="brand-name">Pantry2Plate</div>
-          </div>
-        </div>
-
-        <v-spacer />
-
+    <Navbar>
+      <template #actions>
         <div class="actions">
           <v-btn variant="outlined" class="btn-pill btn-orange-outline" to="/login"> Login </v-btn>
           <v-btn class="btn-pill btn-green" to="/register"> Register </v-btn>
         </div>
-      </v-container>
-    </v-app-bar>
+      </template>
+    </Navbar>
 
     <v-container class="content">
       <v-row class="hero-row" align="center" no-gutters>
         <v-col cols="12" md="6" class="text-col">
           <div class="hero">
-            <div class="pill">Your kitchen, organized.</div>
+            <div class="pill">Your plant corner, thriving.</div>
 
-            <h1 class="hero-title">
-              Plan meals, manage ingredients, and cook smarter — in one place.
-            </h1>
+            <h1 class="hero-title">Care, track, and grow your plants — in one calm place.</h1>
 
             <p class="hero-subtitle">
-              Pantry2Plate keeps your pantry up to date, recommends recipes based on what you
-              already have, and generates a shopping list that makes sense.
+              Seed2Bloom helps you remember watering, track progress, and build a simple checklist
+              for soil, pots, and essentials — so your plants stay happy.
             </p>
 
             <div class="cta">
@@ -64,7 +76,7 @@ const carouselItems = [
         </v-col>
 
         <v-col cols="12" md="6" class="image-col">
-          <v-img src="/illustration_landing.png" class="illustration" contain eager />
+          <v-img src="/landing.png" class="illustration" contain eager />
         </v-col>
       </v-row>
 
@@ -78,9 +90,7 @@ const carouselItems = [
       </div>
     </v-container>
 
-    <footer class="footer">
-      <span>© 2026 Pantry2Plate</span>
-    </footer>
+    <Footer />
   </v-container>
 </template>
 
@@ -94,7 +104,7 @@ const carouselItems = [
 }
 
 .landing {
-  --appbar-h: 70px;
+  --appbar-h: 64px;
   --footer-h: 34px;
   height: 100dvh;
   overflow: hidden;
@@ -106,38 +116,6 @@ const carouselItems = [
 
 :deep(.landing.v-container) {
   padding: 0 !important;
-}
-
-.topbar {
-  height: var(--appbar-h);
-  background: rgba(255, 255, 255, 0.82);
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
-}
-
-.bar-inner {
-  max-width: 1440px;
-  height: var(--appbar-h);
-  display: flex;
-  align-items: center;
-  padding: 0 20px;
-}
-
-.brand {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.brand-logo {
-  width: 64px;
-  height: 45px;
-  object-fit: contain;
-}
-
-.brand-name {
-  font-weight: 950;
-  font-size: 1.08rem;
 }
 
 .actions {
@@ -250,23 +228,6 @@ const carouselItems = [
   overflow: hidden;
   min-height: 0;
 }
-
-.footer {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: var(--footer-h);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.82rem;
-  font-weight: 700;
-  opacity: 0.85;
-  backdrop-filter: blur(12px);
-  z-index: 9999;
-}
-
 
 @keyframes fadeUp {
   from {
