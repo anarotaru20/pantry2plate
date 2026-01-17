@@ -22,8 +22,18 @@ const showPassword = ref(false)
 const showConfirmPassword = ref(false)
 
 const months = [
-  'January','February','March','April','May','June',
-  'July','August','September','October','November','December',
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
 ]
 
 const monthIndex = computed(() => months.indexOf(month.value))
@@ -288,6 +298,7 @@ const handleRegister = async () => {
 .right {
   max-width: 560px;
   text-align: right;
+   animation: fadeUp 650ms ease both;
 }
 
 .right .logo {
@@ -335,6 +346,31 @@ const handleRegister = async () => {
   padding: 10px 12px;
   border-radius: 16px;
   font-weight: 700;
+  animation:
+    fadeUp 650ms ease both,
+    floatSoft 3.6s ease-in-out infinite;
+}
+
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes floatSoft {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-7px);
+  }
 }
 
 .bottom {
@@ -414,4 +450,6 @@ const handleRegister = async () => {
     transform: translateY(-2px);
   }
 }
+
+
 </style>
