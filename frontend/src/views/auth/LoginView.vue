@@ -24,7 +24,7 @@ const handleLogin = async () => {
 
   try {
     await auth.login(email.value.trim(), password.value)
-    router.push('/plants')
+    router.push('/dashboard')
   } catch (e) {
     message.value = e?.message || 'Login failed'
   } finally {

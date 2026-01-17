@@ -63,7 +63,7 @@ const handleRegister = async () => {
     }
 
     await auth.register(email.value.trim(), password.value, profile)
-    router.push('/plants')
+    router.push('/dashboard')
   } catch (e) {
     message.value = e?.message || 'Register failed'
   } finally {
