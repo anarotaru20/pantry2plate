@@ -34,6 +34,9 @@ const close = () => {
       <div class="dlg-b">
         <slot />
       </div>
+<div class="dlg-actions">
+  <slot name="actions" />
+</div>
 
       <template v-if="$slots.footer">
         <v-divider class="my-2" />
@@ -84,4 +87,11 @@ const close = () => {
   align-items: center;
   gap: 12px;
 }
+.dlg-actions {
+  margin-top: 14px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
 </style>
