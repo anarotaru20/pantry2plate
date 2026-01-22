@@ -8,6 +8,8 @@ require("./config/db");
 const app = express();
 const PORT = 5000;
 
+const plantCatalogRoutes = require("./routes/plantCatalog");
+
 // middleware
 app.use(cors());
 app.use(express.json());
@@ -18,12 +20,10 @@ app.use((req, res, next) => {
   next();
 });
 
-// test route
-// app.use("/", testRoute);
-// app.use("/db-test", testRoute);
-
-// test users route
+// routes
 app.use("/", userRoutes);
+app.use("/plants", plantCatalogRoutes);
+
 
 
 // start server
