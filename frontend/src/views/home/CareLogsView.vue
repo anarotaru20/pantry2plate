@@ -94,6 +94,13 @@
                   </template>
 
                   <v-list density="compact">
+                    <v-list-item @click="openEdit(item)">
+                      <template #prepend>
+                        <v-icon size="18">mdi-pencil</v-icon>
+                      </template>
+                      <v-list-item-title>Edit</v-list-item-title>
+                    </v-list-item>
+
                     <v-list-item @click="removeLog(item.id)">
                       <template #prepend>
                         <v-icon size="18">mdi-delete</v-icon>
@@ -109,8 +116,17 @@
       </div>
     </div>
 
-    <BaseDialog v-model="dialog" title="Add care log" :max-width="480">
-      <v-text-field v-model="form.plant" label="Plant name" variant="outlined" rounded="xl" />
+    <BaseDialog v-model="dialog" :title="dialogTitle" :max-width="480">
+      <v-select
+        v-model="form.plantId"
+        :items="plantItems"
+        item-title="title"
+        item-value="value"
+        label="Plant"
+        variant="outlined"
+        rounded="xl"
+      />
+
       <v-select
         v-model="form.action"
         :items="typeItems.filter((x) => x.value !== 'all')"
@@ -120,6 +136,7 @@
         variant="outlined"
         rounded="xl"
       />
+
       <v-text-field v-model="form.date" label="Date" type="date" variant="outlined" rounded="xl" />
       <v-textarea v-model="form.notes" label="Notes" rows="3" variant="outlined" rounded="xl" />
 
@@ -135,16 +152,32 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, ref, onMounted } from 'vue'
+import { storeToRefs } from 'pinia'
 import BaseCard from '@/components/BaseCard.vue'
 import BaseDialog from '@/components/dialog/BaseDialog.vue'
+import { useCareLogsStore } from '@/stores/careLogs'
+import { usePlantsStore } from '@/stores/plants'
+
+const careLogsStore = useCareLogsStore()
+const plantsStore = usePlantsStore()
+
+const { careLogs } = storeToRefs(careLogsStore)
+const { plants } = storeToRefs(plantsStore)
+
+onMounted(async () => {
+  await Promise.all([careLogsStore.fetchCareLogs(), plantsStore.fetchPlants()])
+})
 
 const q = ref('')
 const type = ref('all')
 const dialog = ref(false)
+const editingId = ref(null)
+
+const dialogTitle = computed(() => (editingId.value ? 'Edit care log' : 'Add care log'))
 
 const form = ref({
-  plant: '',
+  plantId: '',
   action: 'water',
   date: new Date().toISOString().slice(0, 10),
   notes: '',
@@ -157,6 +190,18 @@ const typeItems = [
   { title: 'Prune', value: 'prune', icon: 'mdi-content-cut' },
   { title: 'Repot', value: 'repot', icon: 'mdi-flower' },
 ]
+
+const plantItems = computed(() =>
+  (plants.value || []).map((p) => ({
+    title:
+      p?.template?.commonName ||
+      p?.commonName ||
+      p?.name ||
+      p?.template?.species ||
+      'Plant',
+    value: p.id,
+  })),
+)
 
 const iconByType = (t) =>
   t === 'water'
@@ -176,86 +221,28 @@ const labelByType = (t) =>
         ? 'Pruned'
         : 'Repotted'
 
-const today = new Date().toISOString().slice(0, 10)
-const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10)
-const twoDays = new Date(Date.now() - 2 * 86400000).toISOString().slice(0, 10)
+const uiLogs = computed(() =>
+  (careLogs.value || []).map((c) => ({
+    id: c.id,
+    plantId: c.plantId,
+    plant: c.plantName,
+    action: c.action,
+    date: c.date,
+    notes: c.notes,
+  })),
+)
 
-const logs = ref([
-  {
-    id: 'c1',
-    plant: 'Monstera',
-    action: 'water',
-    date: today,
-    notes: 'Small drink. Soil still slightly moist.',
-  },
-  {
-    id: 'c2',
-    plant: 'Monstera',
-    action: 'prune',
-    date: today,
-    notes: 'Removed one yellow leaf from the bottom.',
-  },
-  {
-    id: 'c3',
-    plant: 'Pothos',
-    action: 'water',
-    date: today,
-    notes: 'Quick water, drained well.',
-  },
-  {
-    id: 'c4',
-    plant: 'Fiddle leaf fig',
-    action: 'fertilize',
-    date: today,
-    notes: 'Half dose. Don’t overdo it, queen.',
-  },
-  {
-    id: 'c5',
-    plant: 'Pothos',
-    action: 'fertilize',
-    date: today,
-    notes: 'Liquid fertilizer, light dose.',
-  },
-  {
-    id: 'c6',
-    plant: 'Snake plant',
-    action: 'repot',
-    date: today,
-    notes: 'Moved to a slightly bigger pot, airy mix.',
-  },
-  {
-    id: 'c7',
-    plant: 'ZZ plant',
-    action: 'water',
-    date: today,
-    notes: 'Tiny sip. It will survive the apocalypse anyway.',
-  },
-  {
-    id: 'c7',
-    plant: 'ZZ plant',
-    action: 'water',
-    date: today,
-    notes: 'Tiny sip. It will survive the apocalypse anyway.',
-  },
-  {
-    id: 'c7',
-    plant: 'ZZ plant',
-    action: 'water',
-    date: today,
-    notes: 'Tiny sip. It will survive the apocalypse anyway.',
-  },
-  {
-    id: 'c7',
-    plant: 'ZZ plant',
-    action: 'water',
-    date: yesterday,
-    notes: 'Tiny sip. It will survive the apocalypse anyway.',
-  },
-])
+const plantNameById = (pid) => {
+  const p = (plants.value || []).find((x) => x.id === pid)
+  return (
+    p?.template?.commonName || p?.commonName || p?.name || p?.template?.species || 'Plant'
+  )
+}
 
 const openAdd = () => {
+  editingId.value = null
   form.value = {
-    plant: '',
+    plantId: '',
     action: 'water',
     date: new Date().toISOString().slice(0, 10),
     notes: '',
@@ -263,25 +250,45 @@ const openAdd = () => {
   dialog.value = true
 }
 
-const save = () => {
+const openEdit = (item) => {
+  editingId.value = item.id
+  form.value = {
+    plantId: item.plantId || '',
+    action: item.action || 'water',
+    date: item.date || new Date().toISOString().slice(0, 10),
+    notes: item.notes || '',
+  }
+  dialog.value = true
+}
+
+const save = async () => {
+  const pid = form.value.plantId
+  if (!pid) return
+
   const payload = {
-    plant: form.value.plant.trim(),
+    plantId: pid,
+    plantName: plantNameById(pid),
     action: form.value.action,
     date: form.value.date,
-    notes: form.value.notes.trim(),
+    notes: (form.value.notes || '').trim(),
   }
-  if (!payload.plant) return
-  logs.value.unshift({ id: `c_${Math.random().toString(16).slice(2)}`, ...payload })
+
+  if (editingId.value) {
+    await careLogsStore.updateCareLog(editingId.value, payload)
+  } else {
+    await careLogsStore.addCareLog(payload)
+  }
+
   dialog.value = false
 }
 
-const removeLog = (id) => {
-  logs.value = logs.value.filter((x) => x.id !== id)
+const removeLog = async (id) => {
+  await careLogsStore.deleteCareLog(id)
 }
 
 const filtered = computed(() => {
   const term = q.value.trim().toLowerCase()
-  return logs.value.filter((x) => {
+  return uiLogs.value.filter((x) => {
     if (type.value !== 'all' && x.action !== type.value) return false
     if (!term) return true
     return (
