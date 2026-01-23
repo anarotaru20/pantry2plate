@@ -1,7 +1,12 @@
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, ref, onMounted } from 'vue'
+import { storeToRefs } from 'pinia'
+import { useLocationsStore } from '@/stores/locations'
 import LocationDialog from '@/components/dialog/LocationDialog.vue'
 import BaseCard from '@/components/BaseCard.vue'
+
+const store = useLocationsStore()
+const { locations, loading, error } = storeToRefs(store)
 
 const q = ref('')
 const sortBy = ref('name')
@@ -13,85 +18,53 @@ const selected = ref(null)
 const form = ref({
   name: '',
   room: 'Living room',
-  light: 'medium',
+  light: 'Medium light',
   notes: '',
 })
 
 const roomItems = ['Living room', 'Bedroom', 'Kitchen', 'Balcony', 'Bathroom', 'Office']
 const lightItems = [
-  { title: 'Low light', value: 'low', icon: 'mdi-weather-night' },
-  { title: 'Medium light', value: 'medium', icon: 'mdi-weather-partly-cloudy' },
-  { title: 'Bright light', value: 'bright', icon: 'mdi-weather-sunny' },
+  { title: 'Low light', value: 'Low light', icon: 'mdi-weather-night' },
+  { title: 'Medium light', value: 'Medium light', icon: 'mdi-weather-partly-cloudy' },
+  { title: 'Bright light', value: 'Bright light', icon: 'mdi-weather-sunny' },
+  { title: 'Direct light', value: 'Direct light', icon: 'mdi-white-balance-sunny' },
 ]
 
-const locations = ref([
-  {
-    id: 'l1',
-    name: 'Living room',
-    room: 'Living room',
-    light: 'bright',
-    notes: 'South window. Best spot for sun lovers.',
-    plantsCount: 6,
-  },
-  {
-    id: 'l2',
-    name: 'Kitchen corner',
-    room: 'Kitchen',
-    light: 'medium',
-    notes: 'Warm and cozy. Keep herbs close.',
-    plantsCount: 3,
-  },
-  {
-    id: 'l3',
-    name: 'Balcony',
-    room: 'Balcony',
-    light: 'bright',
-    notes: 'Windy sometimes. Watch the temperature.',
-    plantsCount: 4,
-  },
-  {
-    id: 'l4',
-    name: 'Bedroom shelf',
-    room: 'Bedroom',
-    light: 'low',
-    notes: 'Low light. Great for ZZ / snake plant.',
-    plantsCount: 2,
-  },
-])
-
 const iconByLight = (l) =>
-  l === 'low'
+  l === 'Low light'
     ? 'mdi-weather-night'
-    : l === 'medium'
+    : l === 'Medium light'
       ? 'mdi-weather-partly-cloudy'
-      : 'mdi-weather-sunny'
-
-const labelByLight = (l) =>
-  l === 'low' ? 'Low light' : l === 'medium' ? 'Medium light' : 'Bright light'
+      : l === 'Bright light'
+        ? 'mdi-weather-sunny'
+        : l === 'Direct light'
+          ? 'mdi-white-balance-sunny'
+          : 'mdi-weather-partly-cloudy'
 
 const filtered = computed(() => {
   const term = q.value.trim().toLowerCase()
 
-  const list = locations.value.filter((x) => {
+  const list = (locations.value || []).filter((x) => {
     if (!term) return true
     return (
-      x.name.toLowerCase().includes(term) ||
+      (x.name || '').toLowerCase().includes(term) ||
       (x.room || '').toLowerCase().includes(term) ||
-      (x.notes || '').toLowerCase().includes(term)
+      (x.notes || '').toLowerCase().includes(term) ||
+      (x.light || '').toLowerCase().includes(term)
     )
   })
 
-  if (sortBy.value === 'plants')
-    return [...list].sort((a, b) => (b.plantsCount || 0) - (a.plantsCount || 0))
   if (sortBy.value === 'light')
     return [...list].sort((a, b) => (a.light || '').localeCompare(b.light || ''))
+  if (sortBy.value === 'room')
+    return [...list].sort((a, b) => (a.room || '').localeCompare(b.room || ''))
   return [...list].sort((a, b) => (a.name || '').localeCompare(b.name || ''))
 })
 
 const openAdd = () => {
   mode.value = 'add'
   selected.value = null
-  form.value = { name: '', room: 'Living room', light: 'medium', notes: '' }
+  form.value = { name: '', room: 'Living room', light: 'Medium light', notes: '' }
   dialog.value = true
 }
 
@@ -101,13 +74,13 @@ const openEdit = (loc) => {
   form.value = {
     name: loc.name || '',
     room: loc.room || 'Living room',
-    light: loc.light || 'medium',
+    light: loc.light || 'Medium light',
     notes: loc.notes || '',
   }
   dialog.value = true
 }
 
-const save = () => {
+const save = async () => {
   const payload = {
     name: form.value.name.trim(),
     room: form.value.room,
@@ -116,30 +89,27 @@ const save = () => {
   }
 
   if (!payload.name) return
+  if (!payload.room) return
+  if (!payload.light) return
 
   if (mode.value === 'add') {
-    locations.value.unshift({
-      id: `l_${Math.random().toString(16).slice(2)}`,
-      ...payload,
-      plantsCount: 0,
-    })
-  } else if (selected.value) {
-    const idx = locations.value.findIndex((x) => x.id === selected.value.id)
-    if (idx !== -1) {
-      locations.value[idx] = {
-        ...locations.value[idx],
-        ...payload,
-      }
-    }
+    await store.addLocation(payload)
+  } else if (selected.value?.id) {
+    await store.updateLocation(selected.value.id, payload)
   }
 
   dialog.value = false
   selected.value = null
 }
 
-const removeLoc = (loc) => {
-  locations.value = locations.value.filter((x) => x.id !== loc.id)
+const removeLoc = async (loc) => {
+  if (!loc?.id) return
+  await store.deleteLocation(loc.id)
 }
+
+onMounted(async () => {
+  await store.fetchLocations()
+})
 </script>
 
 <template>
@@ -155,6 +125,17 @@ const removeLoc = (loc) => {
         Add location
       </v-btn>
     </div>
+
+    <v-alert
+      v-if="error"
+      type="error"
+      variant="tonal"
+      density="comfortable"
+      rounded="xl"
+      class="mb-3"
+    >
+      {{ error }}
+    </v-alert>
 
     <div class="controls">
       <v-text-field
@@ -172,7 +153,7 @@ const removeLoc = (loc) => {
         v-model="sortBy"
         :items="[
           { title: 'Sort: Name', value: 'name' },
-          { title: 'Sort: Plants count', value: 'plants' },
+          { title: 'Sort: Room', value: 'room' },
           { title: 'Sort: Light', value: 'light' },
         ]"
         item-title="title"
@@ -185,7 +166,11 @@ const removeLoc = (loc) => {
       />
     </div>
 
-    <v-row dense class="grid" style="row-gap: 12px">
+    <div v-if="loading" class="py-6 d-flex justify-center">
+      <v-progress-circular indeterminate />
+    </div>
+
+    <v-row v-else dense class="grid" style="row-gap: 12px">
       <v-col v-for="loc in filtered" :key="loc.id" cols="12" sm="6" md="4" lg="4">
         <BaseCard :title="loc.name" :subtitle="loc.room">
           <template #menu>
@@ -213,12 +198,7 @@ const removeLoc = (loc) => {
           <template #chips>
             <v-chip size="small" variant="flat">
               <v-icon start size="16">{{ iconByLight(loc.light) }}</v-icon>
-              {{ labelByLight(loc.light) }}
-            </v-chip>
-
-            <v-chip size="small" variant="flat">
-              <v-icon start size="16">mdi-sprout</v-icon>
-              {{ loc.plantsCount }} plants
+              {{ loc.light || '—' }}
             </v-chip>
           </template>
 
@@ -234,7 +214,14 @@ const removeLoc = (loc) => {
       </v-col>
     </v-row>
 
-    <LocationDialog v-model="dialog" :mode="mode" :form="form" @save="save" />
+    <LocationDialog
+      v-model="dialog"
+      :mode="mode"
+      :form="form"
+      :room-items="roomItems"
+      :light-items="lightItems"
+      @save="save"
+    />
   </div>
 </template>
 
@@ -282,125 +269,6 @@ const removeLoc = (loc) => {
 
 .grid {
   margin-top: 2px;
-}
-
-.loc-card {
-  padding: 14px 14px 12px;
-  border: 1px solid rgba(15, 23, 42, 0.06);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.74));
-  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
-}
-
-.loc-top {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 10px;
-}
-
-.loc-name {
-  font-weight: 950;
-  letter-spacing: -0.2px;
-  font-size: 1.05rem;
-}
-
-.loc-room {
-  margin-top: 4px;
-  opacity: 0.7;
-  font-weight: 800;
-  font-size: 0.9rem;
-}
-
-.kebab {
-  opacity: 0.85;
-}
-
-.menu {
-  border-radius: 14px;
-}
-
-.chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 12px;
-}
-
-.chip {
-  border-radius: 999px;
-  font-weight: 850;
-  background: rgba(15, 23, 42, 0.06);
-}
-
-.notes {
-  margin-top: 10px;
-  opacity: 0.75;
-  font-weight: 700;
-  line-height: 1.25rem;
-}
-
-.cta {
-  margin-top: 12px;
-  display: flex;
-  justify-content: flex-end;
-}
-
-.btn {
-  font-weight: 900;
-}
-
-.dlg {
-  padding: 14px 14px 12px;
-  border: 1px solid rgba(15, 23, 42, 0.08);
-  background: rgba(255, 255, 255, 0.92);
-}
-
-.dlg-hdr {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.dlg-title {
-  font-weight: 950;
-  letter-spacing: -0.2px;
-  font-size: 1.1rem;
-}
-
-.dlg-body {
-  margin-top: 12px;
-  display: grid;
-  gap: 10px;
-}
-
-.field {
-  background: rgba(255, 255, 255, 0.78);
-  border-radius: 18px;
-}
-
-.sel-row {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-weight: 850;
-}
-
-.dlg-actions {
-  margin-top: 12px;
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-}
-
-.ghost {
-  font-weight: 900;
-  opacity: 0.85;
-}
-
-.primary {
-  font-weight: 950;
-  border-radius: 999px;
 }
 
 @media (max-width: 960px) {
