@@ -130,52 +130,60 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, onMounted } from 'vue'
+import { storeToRefs } from 'pinia'
 import BaseCard from '@/components/BaseCard.vue'
+import { usePlantsStore } from '@/stores/plants'
+import { useCareLogsStore } from '@/stores/careLogs'
 
-const today = new Date()
-const t0 = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime()
+const plantsStore = usePlantsStore()
+const careLogsStore = useCareLogsStore()
 
-const plants = ref([
-  {
-    id: 'w1',
-    name: 'Monstera',
-    location: 'Living room',
-    every: 7,
-    last: new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10),
-  },
-  {
-    id: 'w2',
-    name: 'Pothos',
-    location: 'Kitchen',
-    every: 5,
-    last: new Date(Date.now() - 5 * 86400000).toISOString().slice(0, 10),
-  },
-  {
-    id: 'w3',
-    name: 'Snake plant',
-    location: 'Bedroom',
-    every: 14,
-    last: new Date(Date.now() - 10 * 86400000).toISOString().slice(0, 10),
-  },
-  {
-    id: 'w4',
-    name: 'ZZ plant',
-    location: 'Office',
-    every: 21,
-    last: new Date(Date.now() - 25 * 86400000).toISOString().slice(0, 10),
-  },
-])
+const { plants } = storeToRefs(plantsStore)
+
+onMounted(async () => {
+  await plantsStore.fetchPlants()
+})
+
+const startOfDayIso = (d = new Date()) =>
+  new Date(d.getFullYear(), d.getMonth(), d.getDate()).toISOString().slice(0, 10)
+
+const addDaysIso = (isoDate, days) => {
+  const d = new Date(isoDate + 'T00:00:00')
+  d.setDate(d.getDate() + Number(days || 0))
+  return d.toISOString().slice(0, 10)
+}
+
+const diffDays = (fromIso, toIso) => {
+  const a = new Date(fromIso + 'T00:00:00').getTime()
+  const b = new Date(toIso + 'T00:00:00').getTime()
+  return Math.round((b - a) / 86400000)
+}
+
+const plantNameOf = (p) =>
+  p?.template?.commonName || p?.commonName || p?.name || p?.template?.species || 'Plant'
+
+const locationOf = (p) =>
+  p?.settings?.location || p?.location || p?.locationName || p?.room || p?.place || '—'
+
+const lastIsoOf = (p) =>
+  (p?.timestamps?.lastWateredAt || p?.timestamps?.createdAt || p?.timestamps?.updatedAt || '')
+    .toString()
+    .slice(0, 10)
+
+const everyDaysOf = (p) => Number(p?.settings?.waterEveryDays || p?.template?.care?.waterEveryDays || 7)
 
 const dueInDays = (p) => {
-  const last = new Date(p.last + 'T00:00:00').getTime()
-  const due = last + p.every * 86400000
-  return Math.round((due - t0) / 86400000)
+  const today = startOfDayIso()
+  const last = p.last
+  const due = addDaysIso(last, p.every)
+  return diffDays(today, due)
 }
 
 const daysSince = (iso) => {
-  const d0 = new Date(iso + 'T00:00:00').getTime()
-  return Math.max(0, Math.round((t0 - d0) / 86400000))
+  const today = startOfDayIso()
+  const d = diffDays(iso, today)
+  return Math.max(0, d)
 }
 
 const lastLabel = (iso) => {
@@ -185,9 +193,24 @@ const lastLabel = (iso) => {
   return `${d} days ago`
 }
 
+const uiPlants = computed(() =>
+  (plants.value || []).map((p) => {
+    const last = lastIsoOf(p) || startOfDayIso()
+    const every = everyDaysOf(p)
+    return {
+      id: p.id,
+      plantId: p.id,
+      name: plantNameOf(p),
+      location: locationOf(p),
+      every,
+      last,
+    }
+  }),
+)
+
 const groups = computed(() => {
   const g = { overdue: [], today: [], upcoming: [] }
-  plants.value.forEach((p) => {
+  uiPlants.value.forEach((p) => {
     const d = dueInDays(p)
     if (d < 0) g.overdue.push(p)
     else if (d === 0) g.today.push(p)
@@ -205,8 +228,16 @@ const summary = computed(() => ({
   upcoming: groups.value.upcoming.length,
 }))
 
-const markDone = (p) => {
-  p.last = new Date().toISOString().slice(0, 10)
+const markDone = async (p) => {
+  const today = startOfDayIso()
+  await careLogsStore.addCareLog({
+    plantId: p.plantId,
+    plantName: p.name,
+    action: 'water',
+    date: today,
+    notes: '',
+  })
+  await plantsStore.fetchPlants()
 }
 </script>
 
