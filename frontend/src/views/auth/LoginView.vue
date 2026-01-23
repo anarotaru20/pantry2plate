@@ -1,38 +1,3 @@
-<script setup>
-import { ref, computed } from 'vue'
-import { useRouter } from 'vue-router'
-import { useAuthStore } from '@/stores/auth'
-import Navbar from '@/components/Navbar.vue'
-
-const router = useRouter()
-const auth = useAuthStore()
-
-const email = ref('')
-const password = ref('')
-const showPassword = ref(false)
-
-const message = ref('')
-const loading = ref(false)
-
-const canSubmit = computed(() => {
-  return email.value.trim().length > 0 && password.value.length > 0 && !loading.value
-})
-
-const handleLogin = async () => {
-  message.value = ''
-  loading.value = true
-
-  try {
-    await auth.login(email.value.trim(), password.value)
-    router.push('/dashboard')
-  } catch (e) {
-    message.value = e?.message || 'Login failed'
-  } finally {
-    loading.value = false
-  }
-}
-</script>
-
 <template>
   <v-container fluid class="auth">
     <Navbar>
@@ -138,6 +103,41 @@ const handleLogin = async () => {
     </v-row>
   </v-container>
 </template>
+
+<script setup>
+import { ref, computed } from 'vue'
+import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
+import Navbar from '@/components/Navbar.vue'
+
+const router = useRouter()
+const auth = useAuthStore()
+
+const email = ref('')
+const password = ref('')
+const showPassword = ref(false)
+
+const message = ref('')
+const loading = ref(false)
+
+const canSubmit = computed(() => {
+  return email.value.trim().length > 0 && password.value.length > 0 && !loading.value
+})
+
+const handleLogin = async () => {
+  message.value = ''
+  loading.value = true
+
+  try {
+    await auth.login(email.value.trim(), password.value)
+    router.push('/dashboard')
+  } catch (e) {
+    message.value = e?.message || 'Login failed'
+  } finally {
+    loading.value = false
+  }
+}
+</script>
 
 <style scoped>
 .auth {

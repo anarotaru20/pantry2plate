@@ -1,3 +1,71 @@
+<template>
+  <BaseDialog
+    :model-value="modelValue"
+    @update:modelValue="emit('update:modelValue', $event)"
+    title="Add a plant"
+    subtitle="Choose from the catalog"
+    max-width="920"
+  >
+    <v-text-field
+      :model-value="search"
+      @update:modelValue="emit('update:search', $event)"
+      placeholder="Search plants..."
+      variant="outlined"
+      density="comfortable"
+      rounded="xl"
+      prepend-inner-icon="mdi-magnify"
+      hide-details
+      class="dlg-search"
+    />
+
+    <div class="chips">
+      <v-chip-group
+        :model-value="activeTag"
+        @update:modelValue="emit('update:activeTag', $event)"
+        mandatory
+        selected-class="chip-active"
+      >
+        <v-chip
+          v-for="t in tagsSource"
+          :key="t.value"
+          :value="t.value"
+          rounded="xl"
+          class="chip"
+          variant="flat"
+        >
+          {{ t.title }}
+        </v-chip>
+      </v-chip-group>
+    </div>
+
+    <div v-if="loading" class="empty">
+      <v-progress-circular indeterminate size="28" />
+      <div class="empty-t">Loading catalog...</div>
+    </div>
+
+    <div v-else-if="loadError" class="empty">
+      <v-icon size="26">mdi-alert-circle-outline</v-icon>
+      <div class="empty-t">{{ loadError }}</div>
+      <div class="empty-s">Check backend and try again.</div>
+    </div>
+
+    <div v-else-if="filteredTemplates.length" class="grid">
+      <PlantCard
+        v-for="p in filteredTemplates"
+        :key="p.templateId || p.id"
+        :plant="p"
+        @click="emit('select', p)"
+      />
+    </div>
+
+    <div v-else class="empty">
+      <v-icon size="26">mdi-magnify-remove-outline</v-icon>
+      <div class="empty-t">No plants found</div>
+      <div class="empty-s">Try a different search or filter.</div>
+    </div>
+  </BaseDialog>
+</template>
+
 <script setup>
 import { computed, ref, watch } from 'vue'
 import BaseDialog from './BaseDialog.vue'
@@ -81,74 +149,6 @@ const filteredTemplates = computed(() => {
   })
 })
 </script>
-
-<template>
-  <BaseDialog
-    :model-value="modelValue"
-    @update:modelValue="emit('update:modelValue', $event)"
-    title="Add a plant"
-    subtitle="Choose from the catalog"
-    max-width="920"
-  >
-    <v-text-field
-      :model-value="search"
-      @update:modelValue="emit('update:search', $event)"
-      placeholder="Search plants..."
-      variant="outlined"
-      density="comfortable"
-      rounded="xl"
-      prepend-inner-icon="mdi-magnify"
-      hide-details
-      class="dlg-search"
-    />
-
-    <div class="chips">
-      <v-chip-group
-        :model-value="activeTag"
-        @update:modelValue="emit('update:activeTag', $event)"
-        mandatory
-        selected-class="chip-active"
-      >
-        <v-chip
-          v-for="t in tagsSource"
-          :key="t.value"
-          :value="t.value"
-          rounded="xl"
-          class="chip"
-          variant="flat"
-        >
-          {{ t.title }}
-        </v-chip>
-      </v-chip-group>
-    </div>
-
-    <div v-if="loading" class="empty">
-      <v-progress-circular indeterminate size="28" />
-      <div class="empty-t">Loading catalog...</div>
-    </div>
-
-    <div v-else-if="loadError" class="empty">
-      <v-icon size="26">mdi-alert-circle-outline</v-icon>
-      <div class="empty-t">{{ loadError }}</div>
-      <div class="empty-s">Check backend and try again.</div>
-    </div>
-
-    <div v-else-if="filteredTemplates.length" class="grid">
-      <PlantCard
-        v-for="p in filteredTemplates"
-        :key="p.templateId || p.id"
-        :plant="p"
-        @click="emit('select', p)"
-      />
-    </div>
-
-    <div v-else class="empty">
-      <v-icon size="26">mdi-magnify-remove-outline</v-icon>
-      <div class="empty-t">No plants found</div>
-      <div class="empty-s">Try a different search or filter.</div>
-    </div>
-  </BaseDialog>
-</template>
 
 <style scoped>
 .dlg-search {

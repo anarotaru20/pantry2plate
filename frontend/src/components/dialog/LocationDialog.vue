@@ -1,23 +1,3 @@
-<script setup>
-import BaseDialog from './BaseDialog.vue'
-
-const props = defineProps({
-  modelValue: Boolean,
-  mode: String,
-  form: Object,
-})
-
-const emit = defineEmits(['update:modelValue', 'save'])
-
-const roomItems = ['Living room', 'Bedroom', 'Kitchen', 'Balcony', 'Bathroom', 'Office']
-
-const lightItems = [
-  { title: 'Low light', value: 'low', icon: 'mdi-weather-night' },
-  { title: 'Medium light', value: 'medium', icon: 'mdi-weather-partly-cloudy' },
-  { title: 'Bright light', value: 'bright', icon: 'mdi-weather-sunny' },
-]
-</script>
-
 <template>
   <BaseDialog
     :model-value="modelValue"
@@ -47,3 +27,23 @@ const lightItems = [
     </template>
   </BaseDialog>
 </template>
+
+<script setup>
+import BaseDialog from './BaseDialog.vue'
+
+const props = defineProps({
+  modelValue: Boolean,
+  mode: String,
+  form: Object,
+})
+
+const emit = defineEmits(['update:modelValue', 'save'])
+
+const roomItems = ['Living room', 'Bedroom', 'Kitchen', 'Balcony', 'Bathroom', 'Office']
+
+const lightItems = [
+  { title: 'Low light', value: 'low', icon: 'mdi-weather-night' },
+  { title: 'Medium light', value: 'medium', icon: 'mdi-weather-partly-cloudy' },
+  { title: 'Bright light', value: 'bright', icon: 'mdi-weather-sunny' },
+]
+</script>

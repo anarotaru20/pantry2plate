@@ -1,3 +1,116 @@
+<template>
+  <div class="page">
+    <div class="hdr">
+      <div>
+        <div class="title">Locations</div>
+        <div class="sub">Organize your plants by rooms and light</div>
+      </div>
+
+      <v-btn rounded="xl" variant="outlined" class="add" @click="openAdd">
+        <v-icon start>mdi-plus</v-icon>
+        Add location
+      </v-btn>
+    </div>
+
+    <v-alert
+      v-if="error"
+      type="error"
+      variant="tonal"
+      density="comfortable"
+      rounded="xl"
+      class="mb-3"
+    >
+      {{ error }}
+    </v-alert>
+
+    <div class="controls">
+      <v-text-field
+        v-model="q"
+        placeholder="Search locations..."
+        variant="outlined"
+        density="comfortable"
+        rounded="xl"
+        prepend-inner-icon="mdi-magnify"
+        hide-details
+        class="search"
+      />
+
+      <v-select
+        v-model="sortBy"
+        :items="[
+          { title: 'Sort: Name', value: 'name' },
+          { title: 'Sort: Room', value: 'room' },
+          { title: 'Sort: Light', value: 'light' },
+        ]"
+        item-title="title"
+        item-value="value"
+        variant="outlined"
+        density="comfortable"
+        rounded="xl"
+        hide-details
+        class="sel"
+      />
+    </div>
+
+    <div v-if="loading" class="py-6 d-flex justify-center">
+      <v-progress-circular indeterminate />
+    </div>
+
+    <v-row v-else dense class="grid" style="row-gap: 12px">
+      <v-col v-for="loc in filtered" :key="loc.id" cols="12" sm="6" md="4" lg="4">
+        <BaseCard :title="loc.name" :subtitle="loc.room">
+          <template #menu>
+            <v-menu location="bottom end">
+              <template #activator="{ props }">
+                <v-btn v-bind="props" icon variant="text">
+                  <v-icon>mdi-dots-vertical</v-icon>
+                </v-btn>
+              </template>
+
+              <v-list density="compact">
+                <v-list-item @click="openEdit(loc)">
+                  <template #prepend><v-icon size="18">mdi-pencil</v-icon></template>
+                  <v-list-item-title>Edit</v-list-item-title>
+                </v-list-item>
+
+                <v-list-item @click="removeLoc(loc)">
+                  <template #prepend><v-icon size="18">mdi-delete</v-icon></template>
+                  <v-list-item-title>Delete</v-list-item-title>
+                </v-list-item>
+              </v-list>
+            </v-menu>
+          </template>
+
+          <template #chips>
+            <v-chip size="small" variant="flat">
+              <v-icon start size="16">{{ iconByLight(loc.light) }}</v-icon>
+              {{ loc.light || '—' }}
+            </v-chip>
+          </template>
+
+          {{ loc.notes }}
+
+          <template #actions>
+            <v-btn rounded="xl" variant="outlined" @click="openEdit(loc)">
+              Manage
+              <v-icon end>mdi-arrow-right</v-icon>
+            </v-btn>
+          </template>
+        </BaseCard>
+      </v-col>
+    </v-row>
+
+    <LocationDialog
+      v-model="dialog"
+      :mode="mode"
+      :form="form"
+      :room-items="roomItems"
+      :light-items="lightItems"
+      @save="save"
+    />
+  </div>
+</template>
+
 <script setup>
 import { computed, ref, onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
@@ -111,119 +224,6 @@ onMounted(async () => {
   await store.fetchLocations()
 })
 </script>
-
-<template>
-  <div class="page">
-    <div class="hdr">
-      <div>
-        <div class="title">Locations</div>
-        <div class="sub">Organize your plants by rooms and light</div>
-      </div>
-
-      <v-btn rounded="xl" variant="outlined" class="add" @click="openAdd">
-        <v-icon start>mdi-plus</v-icon>
-        Add location
-      </v-btn>
-    </div>
-
-    <v-alert
-      v-if="error"
-      type="error"
-      variant="tonal"
-      density="comfortable"
-      rounded="xl"
-      class="mb-3"
-    >
-      {{ error }}
-    </v-alert>
-
-    <div class="controls">
-      <v-text-field
-        v-model="q"
-        placeholder="Search locations..."
-        variant="outlined"
-        density="comfortable"
-        rounded="xl"
-        prepend-inner-icon="mdi-magnify"
-        hide-details
-        class="search"
-      />
-
-      <v-select
-        v-model="sortBy"
-        :items="[
-          { title: 'Sort: Name', value: 'name' },
-          { title: 'Sort: Room', value: 'room' },
-          { title: 'Sort: Light', value: 'light' },
-        ]"
-        item-title="title"
-        item-value="value"
-        variant="outlined"
-        density="comfortable"
-        rounded="xl"
-        hide-details
-        class="sel"
-      />
-    </div>
-
-    <div v-if="loading" class="py-6 d-flex justify-center">
-      <v-progress-circular indeterminate />
-    </div>
-
-    <v-row v-else dense class="grid" style="row-gap: 12px">
-      <v-col v-for="loc in filtered" :key="loc.id" cols="12" sm="6" md="4" lg="4">
-        <BaseCard :title="loc.name" :subtitle="loc.room">
-          <template #menu>
-            <v-menu location="bottom end">
-              <template #activator="{ props }">
-                <v-btn v-bind="props" icon variant="text">
-                  <v-icon>mdi-dots-vertical</v-icon>
-                </v-btn>
-              </template>
-
-              <v-list density="compact">
-                <v-list-item @click="openEdit(loc)">
-                  <template #prepend><v-icon size="18">mdi-pencil</v-icon></template>
-                  <v-list-item-title>Edit</v-list-item-title>
-                </v-list-item>
-
-                <v-list-item @click="removeLoc(loc)">
-                  <template #prepend><v-icon size="18">mdi-delete</v-icon></template>
-                  <v-list-item-title>Delete</v-list-item-title>
-                </v-list-item>
-              </v-list>
-            </v-menu>
-          </template>
-
-          <template #chips>
-            <v-chip size="small" variant="flat">
-              <v-icon start size="16">{{ iconByLight(loc.light) }}</v-icon>
-              {{ loc.light || '—' }}
-            </v-chip>
-          </template>
-
-          {{ loc.notes }}
-
-          <template #actions>
-            <v-btn rounded="xl" variant="outlined" @click="openEdit(loc)">
-              Manage
-              <v-icon end>mdi-arrow-right</v-icon>
-            </v-btn>
-          </template>
-        </BaseCard>
-      </v-col>
-    </v-row>
-
-    <LocationDialog
-      v-model="dialog"
-      :mode="mode"
-      :form="form"
-      :room-items="roomItems"
-      :light-items="lightItems"
-      @save="save"
-    />
-  </div>
-</template>
 
 <style scoped>
 .page {

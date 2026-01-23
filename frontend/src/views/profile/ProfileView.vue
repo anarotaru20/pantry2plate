@@ -1,17 +1,3 @@
-<script setup>
-import { computed, ref } from 'vue'
-import { auth } from '@/services/firebase'
-
-const firstName = computed(() => auth.currentUser?.displayName || '')
-const email = computed(() => auth.currentUser?.email || '')
-
-const formName = ref(firstName.value)
-
-const units = ref('ml')
-const dueSoonDays = ref(1)
-const reminders = ref(true)
-</script>
-
 <template>
   <div class="page">
     <div class="hdr">
@@ -163,9 +149,7 @@ const reminders = ref(true)
             <v-switch v-model="reminders" inset color="green" hide-details />
           </div>
 
-          <div class="hint mt16">
-            These settings are UI-only for now. 
-          </div>
+          <div class="hint mt16">These settings are UI-only for now.</div>
         </v-card>
 
         <v-card class="card mt16" rounded="2xl" elevation="0">
@@ -184,6 +168,20 @@ const reminders = ref(true)
     </v-row>
   </div>
 </template>
+
+<script setup>
+import { computed, ref } from 'vue'
+import { auth } from '@/services/firebase'
+
+const firstName = computed(() => auth.currentUser?.displayName || '')
+const email = computed(() => auth.currentUser?.email || '')
+
+const formName = ref(firstName.value)
+
+const units = ref('ml')
+const dueSoonDays = ref(1)
+const reminders = ref(true)
+</script>
 
 <style scoped>
 .page {

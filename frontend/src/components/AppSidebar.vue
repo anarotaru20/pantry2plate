@@ -1,59 +1,3 @@
-<script setup>
-import { computed, ref, onMounted, onBeforeUnmount } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
-import { logout } from '@/services/auth'
-import Navbar from '@/components/Navbar.vue'
-import Footer from '@/components/Footer.vue'
-import { auth } from '@/services/firebase'
-
-const router = useRouter()
-const route = useRoute()
-
-const handleLogout = () => {
-  logout()
-  router.push('/login')
-}
-
-const items = [
-  { title: 'Dashboard', icon: 'mdi-view-dashboard-outline', to: '/dashboard' },
-  { title: 'My plants', icon: 'mdi-sprout', to: '/plants' },
-  { title: 'Care logs', icon: 'mdi-history', to: '/care-logs' },
-  { title: 'Water needs', icon: 'mdi-water', to: '/needs-water' },
-  { title: 'Locations', icon: 'mdi-map-marker', to: '/locations' },
-]
-
-const activePath = computed(() => route.path)
-
-const now = ref(new Date())
-let timer = null
-
-onMounted(() => {
-  timer = setInterval(() => {
-    now.value = new Date()
-  }, 60000)
-})
-
-onBeforeUnmount(() => {
-  if (timer) clearInterval(timer)
-})
-
-// Icon switches from sun to moon after 18:00
-const isNight = computed(() => now.value.getHours() >= 18)
-const dayIcon = computed(() => (isNight.value ? 'mdi-weather-night' : 'mdi-weather-sunny'))
-// display user's first name
-const firstName = computed(
-  () => auth.currentUser?.displayName || auth.currentUser?.email?.split('@')[0] || 'there',
-)
-
-const dateLabel = computed(() =>
-  now.value.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }),
-)
-
-const timeLabel = computed(() =>
-  now.value.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-)
-</script>
-
 <template>
   <Navbar>
     <template #actions>
@@ -142,6 +86,64 @@ const timeLabel = computed(() =>
     </div>
   </v-navigation-drawer>
 </template>
+
+<script setup>
+import { computed, ref, onMounted, onBeforeUnmount } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
+import { logout } from '@/services/auth'
+import Navbar from '@/components/Navbar.vue'
+import Footer from '@/components/Footer.vue'
+import { auth } from '@/services/firebase'
+
+const router = useRouter()
+const route = useRoute()
+
+const handleLogout = () => {
+  logout()
+  router.push('/login')
+}
+
+const items = [
+  { title: 'Dashboard', icon: 'mdi-view-dashboard-outline', to: '/dashboard' },
+  { title: 'My plants', icon: 'mdi-sprout', to: '/plants' },
+  { title: 'Care logs', icon: 'mdi-history', to: '/care-logs' },
+  { title: 'Water needs', icon: 'mdi-water', to: '/needs-water' },
+  { title: 'Locations', icon: 'mdi-map-marker', to: '/locations' },
+]
+
+const activePath = computed(() => route.path)
+
+const now = ref(new Date())
+let timer = null
+
+onMounted(() => {
+  timer = setInterval(() => {
+    now.value = new Date()
+  }, 60000)
+})
+
+onBeforeUnmount(() => {
+  if (timer) clearInterval(timer)
+})
+
+// Icon switches from sun to moon after 18:00
+const isNight = computed(() => now.value.getHours() >= 18)
+const dayIcon = computed(() => (isNight.value ? 'mdi-weather-night' : 'mdi-weather-sunny'))
+// display user's first name
+const firstName = computed(
+  () => auth.currentUser?.displayName || auth.currentUser?.email?.split('@')[0] || 'there',
+)
+
+const dateLabel = computed(() =>
+  now.value.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }),
+)
+
+const timeLabel = computed(() =>
+  now.value.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+)
+</script>
+
+
 
 <style scoped>
 .actions {

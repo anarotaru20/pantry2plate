@@ -1,40 +1,3 @@
-<script setup>
-const stats = [
-  { label: 'Plants', value: 7, icon: 'mdi-sprout' },
-  { label: 'Needs water', value: 2, icon: 'mdi-water-alert' },
-  { label: 'Due soon', value: 1, icon: 'mdi-timer-sand' },
-  { label: 'Locations', value: 3, icon: 'mdi-map-marker' },
-]
-
-const needsWater = [
-  { id: 'p1', name: 'Monstera', location: 'Living', status: 'needs', hint: 'Overdue by 2 days' },
-  { id: 'p2', name: 'Pothos', location: 'Balcony', status: 'due', hint: 'Due today' },
-  { id: 'p3', name: 'Ficus', location: 'Kitchen', status: 'ok', hint: 'Next in 2 days' },
-]
-
-const recent = [
-  { id: 'l1', type: 'water', plant: 'Ficus', when: 'Today • 10:20', note: '250 ml' },
-  { id: 'l2', type: 'fertilize', plant: 'Monstera', when: 'Yesterday • 18:05', note: 'Liquid fertilizer' },
-  { id: 'l3', type: 'prune', plant: 'Pothos', when: 'Jan 14 • 09:10', note: 'Removed yellow leaves' },
-]
-
-const iconByType = (t) => {
-  if (t === 'water') return 'mdi-water'
-  if (t === 'fertilize') return 'mdi-sprout'
-  if (t === 'prune') return 'mdi-content-cut'
-  if (t === 'repot') return 'mdi-flower'
-  return 'mdi-notebook-outline'
-}
-
-const statusColor = (s) => {
-  if (s === 'needs') return 'rgba(239, 68, 68, 0.12)'
-  if (s === 'due') return 'rgba(245, 158, 11, 0.12)'
-  return 'rgba(34, 197, 94, 0.12)'
-}
-
-const statusText = (s) => (s === 'needs' ? 'Needs water' : s === 'due' ? 'Due soon' : 'OK')
-</script>
-
 <template>
   <div class="page">
     <div class="hdr">
@@ -128,6 +91,45 @@ const statusText = (s) => (s === 'needs' ? 'Needs water' : s === 'due' ? 'Due so
     </v-row>
   </div>
 </template>
+
+<script setup>
+const stats = [
+  { label: 'Plants', value: 7, icon: 'mdi-sprout' },
+  { label: 'Needs water', value: 2, icon: 'mdi-water-alert' },
+  { label: 'Due soon', value: 1, icon: 'mdi-timer-sand' },
+  { label: 'Locations', value: 3, icon: 'mdi-map-marker' },
+]
+
+const needsWater = [
+  { id: 'p1', name: 'Monstera', location: 'Living', status: 'needs', hint: 'Overdue by 2 days' },
+  { id: 'p2', name: 'Pothos', location: 'Balcony', status: 'due', hint: 'Due today' },
+  { id: 'p3', name: 'Ficus', location: 'Kitchen', status: 'ok', hint: 'Next in 2 days' },
+]
+
+const recent = [
+  { id: 'l1', type: 'water', plant: 'Ficus', when: 'Today • 10:20', note: '250 ml' },
+  { id: 'l2', type: 'fertilize', plant: 'Monstera', when: 'Yesterday • 18:05', note: 'Liquid fertilizer' },
+  { id: 'l3', type: 'prune', plant: 'Pothos', when: 'Jan 14 • 09:10', note: 'Removed yellow leaves' },
+]
+
+const iconByType = (t) => {
+  if (t === 'water') return 'mdi-water'
+  if (t === 'fertilize') return 'mdi-sprout'
+  if (t === 'prune') return 'mdi-content-cut'
+  if (t === 'repot') return 'mdi-flower'
+  return 'mdi-notebook-outline'
+}
+
+const statusColor = (s) => {
+  if (s === 'needs') return 'rgba(239, 68, 68, 0.12)'
+  if (s === 'due') return 'rgba(245, 158, 11, 0.12)'
+  return 'rgba(34, 197, 94, 0.12)'
+}
+
+const statusText = (s) => (s === 'needs' ? 'Needs water' : s === 'due' ? 'Due soon' : 'OK')
+</script>
+
+
 
 <style scoped>
 .page {

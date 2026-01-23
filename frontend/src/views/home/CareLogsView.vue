@@ -1,174 +1,3 @@
-<script setup>
-import { computed, ref } from 'vue'
-import BaseCard from '@/components/BaseCard.vue'
-import BaseDialog from '@/components/dialog/BaseDialog.vue'
-
-const q = ref('')
-const type = ref('all')
-const dialog = ref(false)
-
-const form = ref({
-  plant: '',
-  action: 'water',
-  date: new Date().toISOString().slice(0, 10),
-  notes: '',
-})
-
-const typeItems = [
-  { title: 'All', value: 'all', icon: 'mdi-filter-variant' },
-  { title: 'Water', value: 'water', icon: 'mdi-water' },
-  { title: 'Fertilize', value: 'fertilize', icon: 'mdi-leaf' },
-  { title: 'Prune', value: 'prune', icon: 'mdi-content-cut' },
-  { title: 'Repot', value: 'repot', icon: 'mdi-flower' },
-]
-
-const iconByType = (t) =>
-  t === 'water'
-    ? 'mdi-water'
-    : t === 'fertilize'
-      ? 'mdi-leaf'
-      : t === 'prune'
-        ? 'mdi-content-cut'
-        : 'mdi-flower'
-
-const labelByType = (t) =>
-  t === 'water' ? 'Watered' : t === 'fertilize' ? 'Fertilized' : t === 'prune' ? 'Pruned' : 'Repotted'
-
-const today = new Date().toISOString().slice(0, 10)
-const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10)
-const twoDays = new Date(Date.now() - 2 * 86400000).toISOString().slice(0, 10)
-
-const logs = ref([
-  {
-    id: 'c1',
-    plant: 'Monstera',
-    action: 'water',
-    date: today,
-    notes: 'Small drink. Soil still slightly moist.',
-  },
-  {
-    id: 'c2',
-    plant: 'Monstera',
-    action: 'prune',
-    date: today,
-    notes: 'Removed one yellow leaf from the bottom.',
-  },
-  {
-    id: 'c3',
-    plant: 'Pothos',
-    action: 'water',
-    date: today,
-    notes: 'Quick water, drained well.',
-  },
-  {
-    id: 'c4',
-    plant: 'Fiddle leaf fig',
-    action: 'fertilize',
-    date: today,
-    notes: 'Half dose. Don’t overdo it, queen.',
-  },
-  {
-    id: 'c5',
-    plant: 'Pothos',
-    action: 'fertilize',
-    date: today,
-    notes: 'Liquid fertilizer, light dose.',
-  },
-  {
-    id: 'c6',
-    plant: 'Snake plant',
-    action: 'repot',
-    date: today,
-    notes: 'Moved to a slightly bigger pot, airy mix.',
-  },
-  {
-    id: 'c7',
-    plant: 'ZZ plant',
-    action: 'water',
-    date: today,
-    notes: 'Tiny sip. It will survive the apocalypse anyway.',
-  },  {
-    id: 'c7',
-    plant: 'ZZ plant',
-    action: 'water',
-    date: today,
-    notes: 'Tiny sip. It will survive the apocalypse anyway.',
-  },  {
-    id: 'c7',
-    plant: 'ZZ plant',
-    action: 'water',
-    date: today,
-    notes: 'Tiny sip. It will survive the apocalypse anyway.',
-  },  {
-    id: 'c7',
-    plant: 'ZZ plant',
-    action: 'water',
-    date: yesterday,
-    notes: 'Tiny sip. It will survive the apocalypse anyway.',
-  },
-])
-
-
-const openAdd = () => {
-  form.value = {
-    plant: '',
-    action: 'water',
-    date: new Date().toISOString().slice(0, 10),
-    notes: '',
-  }
-  dialog.value = true
-}
-
-const save = () => {
-  const payload = {
-    plant: form.value.plant.trim(),
-    action: form.value.action,
-    date: form.value.date,
-    notes: form.value.notes.trim(),
-  }
-  if (!payload.plant) return
-  logs.value.unshift({ id: `c_${Math.random().toString(16).slice(2)}`, ...payload })
-  dialog.value = false
-}
-
-
-const removeLog = (id) => {
-  logs.value = logs.value.filter((x) => x.id !== id)
-}
-
-const filtered = computed(() => {
-  const term = q.value.trim().toLowerCase()
-  return logs.value.filter((x) => {
-    if (type.value !== 'all' && x.action !== type.value) return false
-    if (!term) return true
-    return (x.plant || '').toLowerCase().includes(term) || (x.notes || '').toLowerCase().includes(term)
-  })
-})
-
-const prettyDay = (iso) => {
-  const d = new Date(iso + 'T00:00:00')
-  const today = new Date()
-  const t0 = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime()
-  const d0 = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()
-  const diff = Math.round((t0 - d0) / 86400000)
-  if (diff === 0) return 'Today'
-  if (diff === 1) return 'Yesterday'
-  return d.toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' })
-}
-
-const grouped = computed(() => {
-  const map = new Map()
-  for (const item of filtered.value) {
-    const key = item.date
-    if (!map.has(key)) map.set(key, [])
-    map.get(key).push(item)
-  }
-  return [...map.entries()]
-    .sort((a, b) => (a[0] < b[0] ? 1 : -1))
-    .map(([date, items]) => ({ date, label: prettyDay(date), items }))
-})
-</script>
-
 <template>
   <div class="page">
     <div class="hdr">
@@ -280,31 +109,210 @@ const grouped = computed(() => {
       </div>
     </div>
 
-<BaseDialog v-model="dialog" title="Add care log" :max-width="480">
-  <v-text-field v-model="form.plant" label="Plant name" variant="outlined" rounded="xl" />
-  <v-select
-    v-model="form.action"
-    :items="typeItems.filter((x) => x.value !== 'all')"
-    item-title="title"
-    item-value="value"
-    label="Action"
-    variant="outlined"
-    rounded="xl"
-  />
-  <v-text-field v-model="form.date" label="Date" type="date" variant="outlined" rounded="xl" />
-  <v-textarea v-model="form.notes" label="Notes" rows="3" variant="outlined" rounded="xl" />
+    <BaseDialog v-model="dialog" title="Add care log" :max-width="480">
+      <v-text-field v-model="form.plant" label="Plant name" variant="outlined" rounded="xl" />
+      <v-select
+        v-model="form.action"
+        :items="typeItems.filter((x) => x.value !== 'all')"
+        item-title="title"
+        item-value="value"
+        label="Action"
+        variant="outlined"
+        rounded="xl"
+      />
+      <v-text-field v-model="form.date" label="Date" type="date" variant="outlined" rounded="xl" />
+      <v-textarea v-model="form.notes" label="Notes" rows="3" variant="outlined" rounded="xl" />
 
-  <template #actions>
-    <v-btn rounded="xl" variant="text" @click="dialog = false">Cancel</v-btn>
-    <v-btn rounded="xl" variant="flat" @click="save">
-      Save
-      <v-icon end>mdi-check</v-icon>
-    </v-btn>
-  </template>
-</BaseDialog>
-
+      <template #actions>
+        <v-btn rounded="xl" variant="text" @click="dialog = false">Cancel</v-btn>
+        <v-btn rounded="xl" variant="flat" @click="save">
+          Save
+          <v-icon end>mdi-check</v-icon>
+        </v-btn>
+      </template>
+    </BaseDialog>
   </div>
 </template>
+
+<script setup>
+import { computed, ref } from 'vue'
+import BaseCard from '@/components/BaseCard.vue'
+import BaseDialog from '@/components/dialog/BaseDialog.vue'
+
+const q = ref('')
+const type = ref('all')
+const dialog = ref(false)
+
+const form = ref({
+  plant: '',
+  action: 'water',
+  date: new Date().toISOString().slice(0, 10),
+  notes: '',
+})
+
+const typeItems = [
+  { title: 'All', value: 'all', icon: 'mdi-filter-variant' },
+  { title: 'Water', value: 'water', icon: 'mdi-water' },
+  { title: 'Fertilize', value: 'fertilize', icon: 'mdi-leaf' },
+  { title: 'Prune', value: 'prune', icon: 'mdi-content-cut' },
+  { title: 'Repot', value: 'repot', icon: 'mdi-flower' },
+]
+
+const iconByType = (t) =>
+  t === 'water'
+    ? 'mdi-water'
+    : t === 'fertilize'
+      ? 'mdi-leaf'
+      : t === 'prune'
+        ? 'mdi-content-cut'
+        : 'mdi-flower'
+
+const labelByType = (t) =>
+  t === 'water'
+    ? 'Watered'
+    : t === 'fertilize'
+      ? 'Fertilized'
+      : t === 'prune'
+        ? 'Pruned'
+        : 'Repotted'
+
+const today = new Date().toISOString().slice(0, 10)
+const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10)
+const twoDays = new Date(Date.now() - 2 * 86400000).toISOString().slice(0, 10)
+
+const logs = ref([
+  {
+    id: 'c1',
+    plant: 'Monstera',
+    action: 'water',
+    date: today,
+    notes: 'Small drink. Soil still slightly moist.',
+  },
+  {
+    id: 'c2',
+    plant: 'Monstera',
+    action: 'prune',
+    date: today,
+    notes: 'Removed one yellow leaf from the bottom.',
+  },
+  {
+    id: 'c3',
+    plant: 'Pothos',
+    action: 'water',
+    date: today,
+    notes: 'Quick water, drained well.',
+  },
+  {
+    id: 'c4',
+    plant: 'Fiddle leaf fig',
+    action: 'fertilize',
+    date: today,
+    notes: 'Half dose. Don’t overdo it, queen.',
+  },
+  {
+    id: 'c5',
+    plant: 'Pothos',
+    action: 'fertilize',
+    date: today,
+    notes: 'Liquid fertilizer, light dose.',
+  },
+  {
+    id: 'c6',
+    plant: 'Snake plant',
+    action: 'repot',
+    date: today,
+    notes: 'Moved to a slightly bigger pot, airy mix.',
+  },
+  {
+    id: 'c7',
+    plant: 'ZZ plant',
+    action: 'water',
+    date: today,
+    notes: 'Tiny sip. It will survive the apocalypse anyway.',
+  },
+  {
+    id: 'c7',
+    plant: 'ZZ plant',
+    action: 'water',
+    date: today,
+    notes: 'Tiny sip. It will survive the apocalypse anyway.',
+  },
+  {
+    id: 'c7',
+    plant: 'ZZ plant',
+    action: 'water',
+    date: today,
+    notes: 'Tiny sip. It will survive the apocalypse anyway.',
+  },
+  {
+    id: 'c7',
+    plant: 'ZZ plant',
+    action: 'water',
+    date: yesterday,
+    notes: 'Tiny sip. It will survive the apocalypse anyway.',
+  },
+])
+
+const openAdd = () => {
+  form.value = {
+    plant: '',
+    action: 'water',
+    date: new Date().toISOString().slice(0, 10),
+    notes: '',
+  }
+  dialog.value = true
+}
+
+const save = () => {
+  const payload = {
+    plant: form.value.plant.trim(),
+    action: form.value.action,
+    date: form.value.date,
+    notes: form.value.notes.trim(),
+  }
+  if (!payload.plant) return
+  logs.value.unshift({ id: `c_${Math.random().toString(16).slice(2)}`, ...payload })
+  dialog.value = false
+}
+
+const removeLog = (id) => {
+  logs.value = logs.value.filter((x) => x.id !== id)
+}
+
+const filtered = computed(() => {
+  const term = q.value.trim().toLowerCase()
+  return logs.value.filter((x) => {
+    if (type.value !== 'all' && x.action !== type.value) return false
+    if (!term) return true
+    return (
+      (x.plant || '').toLowerCase().includes(term) || (x.notes || '').toLowerCase().includes(term)
+    )
+  })
+})
+
+const prettyDay = (iso) => {
+  const d = new Date(iso + 'T00:00:00')
+  const today = new Date()
+  const t0 = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime()
+  const d0 = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()
+  const diff = Math.round((t0 - d0) / 86400000)
+  if (diff === 0) return 'Today'
+  if (diff === 1) return 'Yesterday'
+  return d.toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' })
+}
+
+const grouped = computed(() => {
+  const map = new Map()
+  for (const item of filtered.value) {
+    const key = item.date
+    if (!map.has(key)) map.set(key, [])
+    map.get(key).push(item)
+  }
+  return [...map.entries()]
+    .sort((a, b) => (a[0] < b[0] ? 1 : -1))
+    .map(([date, items]) => ({ date, label: prettyDay(date), items }))
+})
+</script>
 
 <style scoped>
 .page {

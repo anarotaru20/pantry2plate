@@ -1,10 +1,3 @@
-<script setup>
-defineProps({
-  title: String,
-  subtitle: String,
-})
-</script>
-
 <template>
   <v-card class="base-card" variant="flat">
     <div class="top">
@@ -31,6 +24,13 @@ defineProps({
     </div>
   </v-card>
 </template>
+
+<script setup>
+defineProps({
+  title: String,
+  subtitle: String,
+})
+</script>
 
 <style scoped>
 .base-card {

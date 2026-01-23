@@ -1,87 +1,3 @@
-<script setup>
-import { ref, computed } from 'vue'
-import { useRouter } from 'vue-router'
-import { useAuthStore } from '@/stores/auth'
-import Navbar from '@/components/Navbar.vue'
-
-const router = useRouter()
-const auth = useAuthStore()
-
-const firstName = ref('')
-const lastName = ref('')
-const day = ref(null)
-const month = ref(null)
-const year = ref(null)
-const email = ref('')
-const password = ref('')
-const confirmPassword = ref('')
-const message = ref('')
-const loading = ref(false)
-
-const showPassword = ref(false)
-const showConfirmPassword = ref(false)
-
-const months = [
-  'January',
-  'February',
-  'March',
-  'April',
-  'May',
-  'June',
-  'July',
-  'August',
-  'September',
-  'October',
-  'November',
-  'December',
-]
-
-const monthIndex = computed(() => months.indexOf(month.value))
-
-const birthDateIso = computed(() => {
-  if (!day.value || monthIndex.value < 0 || !year.value) return null
-  const mm = String(monthIndex.value + 1).padStart(2, '0')
-  const dd = String(day.value).padStart(2, '0')
-  return `${year.value}-${mm}-${dd}`
-})
-
-const canSubmit = computed(() => {
-  return (
-    email.value.trim().length > 0 &&
-    firstName.value.trim().length > 0 &&
-    lastName.value.trim().length > 0 &&
-    password.value.length > 0 &&
-    confirmPassword.value.length > 0 &&
-    !loading.value
-  )
-})
-
-const handleRegister = async () => {
-  message.value = ''
-  loading.value = true
-
-  try {
-    if (password.value !== confirmPassword.value) {
-      message.value = 'Passwords do not match'
-      return
-    }
-
-    const profile = {
-      firstName: firstName.value.trim(),
-      lastName: lastName.value.trim(),
-      birthDate: birthDateIso.value,
-    }
-
-    await auth.register(email.value.trim(), password.value, profile)
-    router.push('/dashboard')
-  } catch (e) {
-    message.value = e?.message || 'Register failed'
-  } finally {
-    loading.value = false
-  }
-}
-</script>
-
 <template>
   <v-container fluid class="auth">
     <Navbar>
@@ -256,6 +172,90 @@ const handleRegister = async () => {
   </v-container>
 </template>
 
+<script setup>
+import { ref, computed } from 'vue'
+import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
+import Navbar from '@/components/Navbar.vue'
+
+const router = useRouter()
+const auth = useAuthStore()
+
+const firstName = ref('')
+const lastName = ref('')
+const day = ref(null)
+const month = ref(null)
+const year = ref(null)
+const email = ref('')
+const password = ref('')
+const confirmPassword = ref('')
+const message = ref('')
+const loading = ref(false)
+
+const showPassword = ref(false)
+const showConfirmPassword = ref(false)
+
+const months = [
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
+]
+
+const monthIndex = computed(() => months.indexOf(month.value))
+
+const birthDateIso = computed(() => {
+  if (!day.value || monthIndex.value < 0 || !year.value) return null
+  const mm = String(monthIndex.value + 1).padStart(2, '0')
+  const dd = String(day.value).padStart(2, '0')
+  return `${year.value}-${mm}-${dd}`
+})
+
+const canSubmit = computed(() => {
+  return (
+    email.value.trim().length > 0 &&
+    firstName.value.trim().length > 0 &&
+    lastName.value.trim().length > 0 &&
+    password.value.length > 0 &&
+    confirmPassword.value.length > 0 &&
+    !loading.value
+  )
+})
+
+const handleRegister = async () => {
+  message.value = ''
+  loading.value = true
+
+  try {
+    if (password.value !== confirmPassword.value) {
+      message.value = 'Passwords do not match'
+      return
+    }
+
+    const profile = {
+      firstName: firstName.value.trim(),
+      lastName: lastName.value.trim(),
+      birthDate: birthDateIso.value,
+    }
+
+    await auth.register(email.value.trim(), password.value, profile)
+    router.push('/dashboard')
+  } catch (e) {
+    message.value = e?.message || 'Register failed'
+  } finally {
+    loading.value = false
+  }
+}
+</script>
+
 <style scoped>
 .auth {
   min-height: 100vh;
@@ -298,7 +298,7 @@ const handleRegister = async () => {
 .right {
   max-width: 560px;
   text-align: right;
-   animation: fadeUp 650ms ease both;
+  animation: fadeUp 650ms ease both;
 }
 
 .right .logo {
@@ -350,7 +350,6 @@ const handleRegister = async () => {
     fadeUp 650ms ease both,
     floatSoft 3.6s ease-in-out infinite;
 }
-
 
 @keyframes fadeUp {
   from {
@@ -450,6 +449,4 @@ const handleRegister = async () => {
     transform: translateY(-2px);
   }
 }
-
-
 </style>

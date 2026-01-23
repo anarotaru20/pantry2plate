@@ -1,40 +1,3 @@
-<script setup>
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
-
-const props = defineProps({
-  title: { type: String, required: true },
-  items: { type: Array, required: true },
-  intervalMs: { type: Number, default: 3200 },
-})
-
-const active = ref(0)
-let timer = null
-
-const list = computed(() => props.items || [])
-const count = computed(() => list.value.length)
-
-const norm = (i) => ((i % count.value) + count.value) % count.value
-
-const prevIndex = computed(() => norm(active.value - 1))
-const nextIndex = computed(() => norm(active.value + 1))
-
-const setActive = (i) => {
-  active.value = norm(i)
-  restart()
-}
-
-const next = () => setActive(active.value + 1)
-const prev = () => setActive(active.value - 1)
-
-const restart = () => {
-  if (timer) clearInterval(timer)
-  if (count.value > 1) timer = setInterval(next, props.intervalMs)
-}
-
-onMounted(restart)
-onBeforeUnmount(() => timer && clearInterval(timer))
-</script>
-
 <template>
   <section class="cf">
     <h2 class="cf-title">{{ title }}</h2>
@@ -82,6 +45,43 @@ onBeforeUnmount(() => timer && clearInterval(timer))
     </div>
   </section>
 </template>
+
+<script setup>
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+
+const props = defineProps({
+  title: { type: String, required: true },
+  items: { type: Array, required: true },
+  intervalMs: { type: Number, default: 3200 },
+})
+
+const active = ref(0)
+let timer = null
+
+const list = computed(() => props.items || [])
+const count = computed(() => list.value.length)
+
+const norm = (i) => ((i % count.value) + count.value) % count.value
+
+const prevIndex = computed(() => norm(active.value - 1))
+const nextIndex = computed(() => norm(active.value + 1))
+
+const setActive = (i) => {
+  active.value = norm(i)
+  restart()
+}
+
+const next = () => setActive(active.value + 1)
+const prev = () => setActive(active.value - 1)
+
+const restart = () => {
+  if (timer) clearInterval(timer)
+  if (count.value > 1) timer = setInterval(next, props.intervalMs)
+}
+
+onMounted(restart)
+onBeforeUnmount(() => timer && clearInterval(timer))
+</script>
 
 <style scoped>
 .cf {

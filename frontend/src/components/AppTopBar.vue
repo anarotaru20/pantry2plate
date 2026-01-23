@@ -1,12 +1,3 @@
-<script setup>
-import { computed } from 'vue'
-import { useRoute } from 'vue-router'
-
-const route = useRoute()
-
-const title = computed(() => route.meta.title || '')
-</script>
-
 <template>
   <v-toolbar flat class="topbar">
     <v-toolbar-title class="title">
@@ -16,6 +7,15 @@ const title = computed(() => route.meta.title || '')
     <v-spacer />
   </v-toolbar>
 </template>
+
+<script setup>
+import { computed } from 'vue'
+import { useRoute } from 'vue-router'
+
+const route = useRoute()
+
+const title = computed(() => route.meta.title || '')
+</script>
 
 <style scoped>
 .topbar {

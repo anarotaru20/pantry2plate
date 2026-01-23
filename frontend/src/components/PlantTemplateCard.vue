@@ -1,20 +1,3 @@
-<script setup>
-const props = defineProps({
-  plant: {
-    type: Object,
-    required: true,
-  },
-})
-
-const lightIcon = (v) =>
-  v === 'low' ? 'mdi-weather-night' : v === 'medium' ? 'mdi-weather-partly-cloudy' : 'mdi-weather-sunny'
-
-const waterIcon = (v) =>
-  v === 'low' ? 'mdi-water-outline' : v === 'medium' ? 'mdi-water' : 'mdi-water-plus'
-
-const cap = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : '')
-</script>
-
 <template>
   <v-card class="card" rounded="2xl" elevation="0">
     <div class="top">
@@ -40,11 +23,15 @@ const cap = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : '')
       <div class="sub">{{ plant.scientificName || plant.species }}</div>
 
       <div class="tags">
-        <v-chip v-if="plant.petSafe" class="tag" rounded="xl" variant="flat">
-          pet-safe
-        </v-chip>
+        <v-chip v-if="plant.petSafe" class="tag" rounded="xl" variant="flat"> pet-safe </v-chip>
 
-        <v-chip v-for="t in (plant.tags || []).slice(0, 3)" :key="t" class="tag" rounded="xl" variant="flat">
+        <v-chip
+          v-for="t in (plant.tags || []).slice(0, 3)"
+          :key="t"
+          class="tag"
+          rounded="xl"
+          variant="flat"
+        >
           {{ cap(t) }}
         </v-chip>
       </div>
@@ -52,13 +39,37 @@ const cap = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : '')
   </v-card>
 </template>
 
+<script setup>
+const props = defineProps({
+  plant: {
+    type: Object,
+    required: true,
+  },
+})
+
+const lightIcon = (v) =>
+  v === 'low'
+    ? 'mdi-weather-night'
+    : v === 'medium'
+      ? 'mdi-weather-partly-cloudy'
+      : 'mdi-weather-sunny'
+
+const waterIcon = (v) =>
+  v === 'low' ? 'mdi-water-outline' : v === 'medium' ? 'mdi-water' : 'mdi-water-plus'
+
+const cap = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : '')
+</script>
+
 <style scoped>
 .card {
   border: 1px solid rgba(20, 31, 24, 0.08);
   background: rgba(255, 255, 255, 0.9);
   overflow: hidden;
   cursor: pointer;
-  transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease,
+    border-color 160ms ease;
 }
 
 .card:hover {

@@ -1,22 +1,3 @@
-<script setup>
-import { computed } from 'vue'
-import BaseDialog from './BaseDialog.vue'
-
-const props = defineProps({
-  modelValue: { type: Boolean, default: false },
-  mode: { type: String, default: 'add' },
-  plant: { type: Object, default: null },
-  form: { type: Object, required: true },
-  locations: { type: Array, default: () => [] },
-})
-
-const emit = defineEmits(['update:modelValue', 'update:form', 'back', 'save'])
-
-const setField = (key, value) => {
-  emit('update:form', { ...props.form, [key]: value })
-}
-</script>
-
 <template>
   <BaseDialog
     :model-value="modelValue"
@@ -129,6 +110,25 @@ const setField = (key, value) => {
     </template>
   </BaseDialog>
 </template>
+
+<script setup>
+import { computed } from 'vue'
+import BaseDialog from './BaseDialog.vue'
+
+const props = defineProps({
+  modelValue: { type: Boolean, default: false },
+  mode: { type: String, default: 'add' },
+  plant: { type: Object, default: null },
+  form: { type: Object, required: true },
+  locations: { type: Array, default: () => [] },
+})
+
+const emit = defineEmits(['update:modelValue', 'update:form', 'back', 'save'])
+
+const setField = (key, value) => {
+  emit('update:form', { ...props.form, [key]: value })
+}
+</script>
 
 <style scoped>
 .mt12 {

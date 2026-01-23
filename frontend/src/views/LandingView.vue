@@ -1,42 +1,3 @@
-<script setup>
-import AutoCardCarousel from '../components/AutoCardCarousel.vue'
-import Navbar from '../components/Navbar.vue'
-import Footer from '../components/Footer.vue'
-
-const carouselItems = [
-  {
-    icon: 'mdi-sprout',
-    title: 'Track your plants',
-    text: 'Keep a simple log of care, growth, and notes for each plant.',
-  },
-  {
-    icon: 'mdi-water',
-    title: 'Watering reminders',
-    text: 'Stay consistent with watering schedules without overdoing it.',
-  },
-  {
-    icon: 'mdi-weather-sunny',
-    title: 'Light & placement',
-    text: 'Remember the best spot for each plant based on light needs.',
-  },
-  {
-    icon: 'mdi-flask-outline',
-    title: 'Fertilize smarter',
-    text: 'Track feeding dates and what worked best for healthier leaves.',
-  },
-  {
-    icon: 'mdi-leaf',
-    title: 'Care recommendations',
-    text: 'Get tips based on your plants and your routine.',
-  },
-  {
-    icon: 'mdi-format-list-checks',
-    title: 'Supplies checklist',
-    text: 'Generate a list for soil, pots, nutrients, and anything you’re missing.',
-  },
-]
-</script>
-
 <template>
   <v-container fluid class="landing">
     <Navbar>
@@ -93,6 +54,45 @@ const carouselItems = [
     <Footer />
   </v-container>
 </template>
+
+<script setup>
+import AutoCardCarousel from '../components/AutoCardCarousel.vue'
+import Navbar from '../components/Navbar.vue'
+import Footer from '../components/Footer.vue'
+
+const carouselItems = [
+  {
+    icon: 'mdi-sprout',
+    title: 'Track your plants',
+    text: 'Keep a simple log of care, growth, and notes for each plant.',
+  },
+  {
+    icon: 'mdi-water',
+    title: 'Watering reminders',
+    text: 'Stay consistent with watering schedules without overdoing it.',
+  },
+  {
+    icon: 'mdi-weather-sunny',
+    title: 'Light & placement',
+    text: 'Remember the best spot for each plant based on light needs.',
+  },
+  {
+    icon: 'mdi-flask-outline',
+    title: 'Fertilize smarter',
+    text: 'Track feeding dates and what worked best for healthier leaves.',
+  },
+  {
+    icon: 'mdi-leaf',
+    title: 'Care recommendations',
+    text: 'Get tips based on your plants and your routine.',
+  },
+  {
+    icon: 'mdi-format-list-checks',
+    title: 'Supplies checklist',
+    text: 'Generate a list for soil, pots, nutrients, and anything you’re missing.',
+  },
+]
+</script>
 
 <style scoped>
 :global(html),

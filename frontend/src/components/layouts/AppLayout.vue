@@ -1,8 +1,3 @@
-<script setup>
-import AppSide from '../AppSidebar.vue'
-import AppTopbar from '../AppTopBar.vue'
-</script>
-
 <template>
   <v-layout class="app-shell">
     <AppSide />
@@ -15,6 +10,11 @@ import AppTopbar from '../AppTopBar.vue'
     </v-main>
   </v-layout>
 </template>
+
+<script setup>
+import AppSide from '../AppSidebar.vue'
+import AppTopbar from '../AppTopBar.vue'
+</script>
 
 <style scoped>
 .app-shell {

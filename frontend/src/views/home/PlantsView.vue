@@ -1,160 +1,3 @@
-<script setup>
-import { computed, ref, onMounted } from 'vue'
-import MyPlantCard from '@/components/MyPlantCard.vue'
-import PlantDetailsDialog from '@/components/dialog/PlantDetailsDialog.vue'
-import PlantCatalogDialog from '@/components/dialog/PlantCatalogDialog.vue'
-import { usePlantsStore } from '@/stores/plants'
-
-const plantsStore = usePlantsStore()
-
-const q = ref('')
-const status = ref('all')
-const location = ref('all')
-
-const addDialog = ref(false)
-const detailsDialog = ref(false)
-const selectedTemplate = ref(null)
-
-const search = ref('')
-const activeTag = ref('all')
-const tags = [
-  { title: 'All', value: 'all' },
-  { title: 'Indoor', value: 'indoor' },
-  { title: 'Outdoor', value: 'outdoor' },
-  { title: 'Exotic', value: 'exotic' },
-  { title: 'Easy', value: 'easy' },
-  { title: 'Pet-safe', value: 'petSafe' },
-]
-
-const form = ref({
-  location: '',
-  waterEveryDays: 3,
-  notes: '',
-})
-
-const locationItems = ['Living', 'Balcony', 'Kitchen', 'Bedroom']
-
-onMounted(() => {
-  plantsStore.fetchPlants()
-})
-
-const openDetails = (tpl) => {
-  selectedTemplate.value = tpl
-  form.value = {
-    location: '',
-    waterEveryDays: 3,
-    notes: '',
-  }
-  addDialog.value = false
-  detailsDialog.value = true
-}
-
-const backToCatalog = () => {
-  detailsDialog.value = false
-  addDialog.value = true
-}
-
-const saveNewPlant = async () => {
-  if (!selectedTemplate.value) return
-  await plantsStore.addPlant({
-    templateId: selectedTemplate.value.id,
-    location: form.value.location,
-    waterEveryDays: Number(form.value.waterEveryDays),
-    notes: form.value.notes,
-  })
-  detailsDialog.value = false
-  selectedTemplate.value = null
-}
-
-const locations = computed(() => {
-  const locs = plantsStore.plants.map((p) => p?.settings?.location).filter(Boolean)
-  return ['all', ...Array.from(new Set(locs))]
-})
-
-const normalizedPlants = computed(() =>
-  (plantsStore.plants || []).map((p) => ({
-    id: p.id,
-    name: p?.template?.commonName || 'Plant',
-    location: p?.settings?.location || '',
-    waterEveryDays: p?.settings?.waterEveryDays ?? 0,
-    note: p?.settings?.notes || '',
-    photoUrl: p?.template?.imageUrl || '',
-    status: 'ok',
-    _raw: p,
-  })),
-)
-
-const filtered = computed(() => {
-  const term = q.value.trim().toLowerCase()
-  return normalizedPlants.value.filter((p) => {
-    const matchesQ =
-      !term || p.name.toLowerCase().includes(term) || (p.location || '').toLowerCase().includes(term)
-    const matchesStatus = status.value === 'all' || p.status === status.value
-    const matchesLoc = location.value === 'all' || p.location === location.value
-    return matchesQ && matchesStatus && matchesLoc
-  })
-})
-
-const editDialog = ref(false)
-const selectedPlant = ref(null)
-const editSaving = ref(false)
-
-const editForm = ref({
-  location: '',
-  waterEveryDays: 3,
-  notes: '',
-  photoUrl: '',
-})
-
-const openEdit = (p) => {
-  selectedPlant.value = p
-  editForm.value = {
-    location: p.location || '',
-    waterEveryDays: p.waterEveryDays ?? 3,
-    notes: p.note || '',
-    photoUrl: p.photoUrl || '',
-  }
-  editDialog.value = true
-}
-
-const saveEdit = async () => {
-  if (!selectedPlant.value) return
-  editSaving.value = true
-  try {
-    await plantsStore.updatePlant(selectedPlant.value.id, {
-      location: editForm.value.location,
-      waterEveryDays: Number(editForm.value.waterEveryDays),
-      notes: editForm.value.notes,
-    })
-    editDialog.value = false
-    selectedPlant.value = null
-  } finally {
-    editSaving.value = false
-  }
-}
-
-const deleteDialog = ref(false)
-const plantToDelete = ref(null)
-const deleteLoading = ref(false)
-
-const openDelete = (p) => {
-  plantToDelete.value = p
-  deleteDialog.value = true
-}
-
-const confirmDelete = async () => {
-  if (!plantToDelete.value) return
-  deleteLoading.value = true
-  try {
-    await plantsStore.deletePlant(plantToDelete.value.id)
-    deleteDialog.value = false
-    plantToDelete.value = null
-  } finally {
-    deleteLoading.value = false
-  }
-}
-</script>
-
 <template>
   <div class="page">
     <div class="hdr">
@@ -248,7 +91,8 @@ const confirmDelete = async () => {
       <v-card rounded="2xl">
         <v-card-title class="font-weight-black">Delete plant?</v-card-title>
         <v-card-text>
-          This will permanently delete <strong>{{ plantToDelete?.name }}</strong>.
+          This will permanently delete <strong>{{ plantToDelete?.name }}</strong
+          >.
         </v-card-text>
         <v-card-actions>
           <v-spacer />
@@ -266,13 +110,177 @@ const confirmDelete = async () => {
       </v-card>
     </v-dialog>
 
-    <v-row v-if="!plantsStore.loading && !plantsStore.error" dense class="grid-my-plants" style="row-gap: 12px">
+    <v-row
+      v-if="!plantsStore.loading && !plantsStore.error"
+      dense
+      class="grid-my-plants"
+      style="row-gap: 12px"
+    >
       <v-col v-for="p in filtered" :key="p.id" cols="12" sm="6" md="4" lg="4">
         <MyPlantCard :plant="p" @edit="openEdit" @delete="openDelete" />
       </v-col>
     </v-row>
   </div>
 </template>
+
+<script setup>
+import { computed, ref, onMounted } from 'vue'
+import MyPlantCard from '@/components/MyPlantCard.vue'
+import PlantDetailsDialog from '@/components/dialog/PlantDetailsDialog.vue'
+import PlantCatalogDialog from '@/components/dialog/PlantCatalogDialog.vue'
+import { usePlantsStore } from '@/stores/plants'
+
+const plantsStore = usePlantsStore()
+
+const q = ref('')
+const status = ref('all')
+const location = ref('all')
+
+const addDialog = ref(false)
+const detailsDialog = ref(false)
+const selectedTemplate = ref(null)
+
+const search = ref('')
+const activeTag = ref('all')
+const tags = [
+  { title: 'All', value: 'all' },
+  { title: 'Indoor', value: 'indoor' },
+  { title: 'Outdoor', value: 'outdoor' },
+  { title: 'Exotic', value: 'exotic' },
+  { title: 'Easy', value: 'easy' },
+  { title: 'Pet-safe', value: 'petSafe' },
+]
+
+const form = ref({
+  location: '',
+  waterEveryDays: 3,
+  notes: '',
+})
+
+const locationItems = ['Living', 'Balcony', 'Kitchen', 'Bedroom']
+
+onMounted(() => {
+  plantsStore.fetchPlants()
+})
+
+const openDetails = (tpl) => {
+  selectedTemplate.value = tpl
+  form.value = {
+    location: '',
+    waterEveryDays: 3,
+    notes: '',
+  }
+  addDialog.value = false
+  detailsDialog.value = true
+}
+
+const backToCatalog = () => {
+  detailsDialog.value = false
+  addDialog.value = true
+}
+
+const saveNewPlant = async () => {
+  if (!selectedTemplate.value) return
+  await plantsStore.addPlant({
+    templateId: selectedTemplate.value.id,
+    location: form.value.location,
+    waterEveryDays: Number(form.value.waterEveryDays),
+    notes: form.value.notes,
+  })
+  detailsDialog.value = false
+  selectedTemplate.value = null
+}
+
+const locations = computed(() => {
+  const locs = plantsStore.plants.map((p) => p?.settings?.location).filter(Boolean)
+  return ['all', ...Array.from(new Set(locs))]
+})
+
+const normalizedPlants = computed(() =>
+  (plantsStore.plants || []).map((p) => ({
+    id: p.id,
+    name: p?.template?.commonName || 'Plant',
+    location: p?.settings?.location || '',
+    waterEveryDays: p?.settings?.waterEveryDays ?? 0,
+    note: p?.settings?.notes || '',
+    photoUrl: p?.template?.imageUrl || '',
+    status: 'ok',
+    _raw: p,
+  })),
+)
+
+const filtered = computed(() => {
+  const term = q.value.trim().toLowerCase()
+  return normalizedPlants.value.filter((p) => {
+    const matchesQ =
+      !term ||
+      p.name.toLowerCase().includes(term) ||
+      (p.location || '').toLowerCase().includes(term)
+    const matchesStatus = status.value === 'all' || p.status === status.value
+    const matchesLoc = location.value === 'all' || p.location === location.value
+    return matchesQ && matchesStatus && matchesLoc
+  })
+})
+
+const editDialog = ref(false)
+const selectedPlant = ref(null)
+const editSaving = ref(false)
+
+const editForm = ref({
+  location: '',
+  waterEveryDays: 3,
+  notes: '',
+  photoUrl: '',
+})
+
+const openEdit = (p) => {
+  selectedPlant.value = p
+  editForm.value = {
+    location: p.location || '',
+    waterEveryDays: p.waterEveryDays ?? 3,
+    notes: p.note || '',
+    photoUrl: p.photoUrl || '',
+  }
+  editDialog.value = true
+}
+
+const saveEdit = async () => {
+  if (!selectedPlant.value) return
+  editSaving.value = true
+  try {
+    await plantsStore.updatePlant(selectedPlant.value.id, {
+      location: editForm.value.location,
+      waterEveryDays: Number(editForm.value.waterEveryDays),
+      notes: editForm.value.notes,
+    })
+    editDialog.value = false
+    selectedPlant.value = null
+  } finally {
+    editSaving.value = false
+  }
+}
+
+const deleteDialog = ref(false)
+const plantToDelete = ref(null)
+const deleteLoading = ref(false)
+
+const openDelete = (p) => {
+  plantToDelete.value = p
+  deleteDialog.value = true
+}
+
+const confirmDelete = async () => {
+  if (!plantToDelete.value) return
+  deleteLoading.value = true
+  try {
+    await plantsStore.deletePlant(plantToDelete.value.id)
+    deleteDialog.value = false
+    plantToDelete.value = null
+  } finally {
+    deleteLoading.value = false
+  }
+}
+</script>
 
 <style scoped>
 .page {

@@ -1,15 +1,3 @@
-<script setup>
-const props = defineProps({
-  plant: { type: Object, required: true },
-})
-const emit = defineEmits(['edit', 'delete'])
-
-const statusLabel = (s) => (s === 'needs' ? 'Needs water' : s === 'due' ? 'Due soon' : 'OK')
-const statusIcon = (s) =>
-  s === 'needs' ? 'mdi-water-alert' : s === 'due' ? 'mdi-timer-sand' : 'mdi-check-circle'
-const statusClass = (s) => (s === 'needs' ? 'needs' : s === 'due' ? 'due' : 'ok')
-</script>
-
 <template>
   <v-card class="card" rounded="2xl" elevation="0">
     <div class="top">
@@ -68,6 +56,18 @@ const statusClass = (s) => (s === 'needs' ? 'needs' : s === 'due' ? 'due' : 'ok'
     </div>
   </v-card>
 </template>
+
+<script setup>
+const props = defineProps({
+  plant: { type: Object, required: true },
+})
+const emit = defineEmits(['edit', 'delete'])
+
+const statusLabel = (s) => (s === 'needs' ? 'Needs water' : s === 'due' ? 'Due soon' : 'OK')
+const statusIcon = (s) =>
+  s === 'needs' ? 'mdi-water-alert' : s === 'due' ? 'mdi-timer-sand' : 'mdi-check-circle'
+const statusClass = (s) => (s === 'needs' ? 'needs' : s === 'due' ? 'due' : 'ok')
+</script>
 
 <style scoped>
 .card {

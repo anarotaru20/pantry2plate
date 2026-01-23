@@ -1,84 +1,3 @@
-<script setup>
-import { computed, ref } from 'vue'
-import BaseCard from '@/components/BaseCard.vue'
-
-const today = new Date()
-const t0 = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime()
-
-const plants = ref([
-  {
-    id: 'w1',
-    name: 'Monstera',
-    location: 'Living room',
-    every: 7,
-    last: new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10),
-  },
-  {
-    id: 'w2',
-    name: 'Pothos',
-    location: 'Kitchen',
-    every: 5,
-    last: new Date(Date.now() - 5 * 86400000).toISOString().slice(0, 10),
-  },
-  {
-    id: 'w3',
-    name: 'Snake plant',
-    location: 'Bedroom',
-    every: 14,
-    last: new Date(Date.now() - 10 * 86400000).toISOString().slice(0, 10),
-  },
-  {
-    id: 'w4',
-    name: 'ZZ plant',
-    location: 'Office',
-    every: 21,
-    last: new Date(Date.now() - 25 * 86400000).toISOString().slice(0, 10),
-  },
-])
-
-const dueInDays = (p) => {
-  const last = new Date(p.last + 'T00:00:00').getTime()
-  const due = last + p.every * 86400000
-  return Math.round((due - t0) / 86400000)
-}
-
-const daysSince = (iso) => {
-  const d0 = new Date(iso + 'T00:00:00').getTime()
-  return Math.max(0, Math.round((t0 - d0) / 86400000))
-}
-
-const lastLabel = (iso) => {
-  const d = daysSince(iso)
-  if (d === 0) return 'today'
-  if (d === 1) return 'yesterday'
-  return `${d} days ago`
-}
-
-const groups = computed(() => {
-  const g = { overdue: [], today: [], upcoming: [] }
-  plants.value.forEach((p) => {
-    const d = dueInDays(p)
-    if (d < 0) g.overdue.push(p)
-    else if (d === 0) g.today.push(p)
-    else g.upcoming.push(p)
-  })
-  g.upcoming = [...g.upcoming].sort((a, b) => dueInDays(a) - dueInDays(b))
-  g.today = [...g.today].sort((a, b) => (a.name || '').localeCompare(b.name || ''))
-  g.overdue = [...g.overdue].sort((a, b) => dueInDays(a) - dueInDays(b))
-  return g
-})
-
-const summary = computed(() => ({
-  overdue: groups.value.overdue.length,
-  today: groups.value.today.length,
-  upcoming: groups.value.upcoming.length,
-}))
-
-const markDone = (p) => {
-  p.last = new Date().toISOString().slice(0, 10)
-}
-</script>
-
 <template>
   <div class="page">
     <div class="hdr">
@@ -114,7 +33,10 @@ const markDone = (p) => {
       </div>
     </div>
 
-    <div v-if="!groups.overdue.length && !groups.today.length && !groups.upcoming.length" class="empty">
+    <div
+      v-if="!groups.overdue.length && !groups.today.length && !groups.upcoming.length"
+      class="empty"
+    >
       <v-icon size="36">mdi-water-off</v-icon>
       <div class="empty-title">All plants are happy</div>
       <div class="empty-sub">No watering needed right now.</div>
@@ -206,6 +128,87 @@ const markDone = (p) => {
     </div>
   </div>
 </template>
+
+<script setup>
+import { computed, ref } from 'vue'
+import BaseCard from '@/components/BaseCard.vue'
+
+const today = new Date()
+const t0 = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime()
+
+const plants = ref([
+  {
+    id: 'w1',
+    name: 'Monstera',
+    location: 'Living room',
+    every: 7,
+    last: new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10),
+  },
+  {
+    id: 'w2',
+    name: 'Pothos',
+    location: 'Kitchen',
+    every: 5,
+    last: new Date(Date.now() - 5 * 86400000).toISOString().slice(0, 10),
+  },
+  {
+    id: 'w3',
+    name: 'Snake plant',
+    location: 'Bedroom',
+    every: 14,
+    last: new Date(Date.now() - 10 * 86400000).toISOString().slice(0, 10),
+  },
+  {
+    id: 'w4',
+    name: 'ZZ plant',
+    location: 'Office',
+    every: 21,
+    last: new Date(Date.now() - 25 * 86400000).toISOString().slice(0, 10),
+  },
+])
+
+const dueInDays = (p) => {
+  const last = new Date(p.last + 'T00:00:00').getTime()
+  const due = last + p.every * 86400000
+  return Math.round((due - t0) / 86400000)
+}
+
+const daysSince = (iso) => {
+  const d0 = new Date(iso + 'T00:00:00').getTime()
+  return Math.max(0, Math.round((t0 - d0) / 86400000))
+}
+
+const lastLabel = (iso) => {
+  const d = daysSince(iso)
+  if (d === 0) return 'today'
+  if (d === 1) return 'yesterday'
+  return `${d} days ago`
+}
+
+const groups = computed(() => {
+  const g = { overdue: [], today: [], upcoming: [] }
+  plants.value.forEach((p) => {
+    const d = dueInDays(p)
+    if (d < 0) g.overdue.push(p)
+    else if (d === 0) g.today.push(p)
+    else g.upcoming.push(p)
+  })
+  g.upcoming = [...g.upcoming].sort((a, b) => dueInDays(a) - dueInDays(b))
+  g.today = [...g.today].sort((a, b) => (a.name || '').localeCompare(b.name || ''))
+  g.overdue = [...g.overdue].sort((a, b) => dueInDays(a) - dueInDays(b))
+  return g
+})
+
+const summary = computed(() => ({
+  overdue: groups.value.overdue.length,
+  today: groups.value.today.length,
+  upcoming: groups.value.upcoming.length,
+}))
+
+const markDone = (p) => {
+  p.last = new Date().toISOString().slice(0, 10)
+}
+</script>
 
 <style scoped>
 .page {
