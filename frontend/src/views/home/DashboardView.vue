@@ -17,7 +17,9 @@
       <v-col v-for="s in stats" :key="s.label" cols="12" sm="6" md="3">
         <v-card class="kpi" rounded="2xl" elevation="0">
           <div class="kpi-top">
-            <div class="kpi-ic"><v-icon>{{ s.icon }}</v-icon></div>
+            <div class="kpi-ic">
+              <v-icon>{{ s.icon }}</v-icon>
+            </div>
             <div class="kpi-val">{{ s.value }}</div>
           </div>
           <div class="kpi-lab">{{ s.label }}</div>
@@ -30,14 +32,22 @@
         <v-card class="card" rounded="2xl" elevation="0">
           <div class="card-h">
             <div class="card-t">Watering status</div>
-            <v-chip rounded="xl" class="chip" variant="flat">
-              Sorted by urgency
-            </v-chip>
+            <v-chip rounded="xl" class="chip" variant="flat">Sorted by urgency</v-chip>
           </div>
 
           <v-divider class="my-4" />
 
           <div class="list">
+            <div v-if="needsWater.length === 0" class="row">
+              <div class="row-left">
+                <div class="dot" :style="{ background: statusColor('ok') }"></div>
+                <div>
+                  <div class="row-title">All good 🎉</div>
+                  <div class="row-sub">No plants need watering right now</div>
+                </div>
+              </div>
+            </div>
+
             <div v-for="p in needsWater" :key="p.id" class="row">
               <div class="row-left">
                 <div class="dot" :style="{ background: statusColor(p.status) }"></div>
@@ -63,15 +73,26 @@
       <v-col cols="12" md="5">
         <v-card class="card" rounded="2xl" elevation="0">
           <div class="card-h">
-            <div class="card-t">Recent care</div>
-            <v-btn rounded="xl" variant="outlined" disabled>
-              View all
-            </v-btn>
+            <div class="card-t">Recent activity</div>
+            <v-btn rounded="xl" variant="outlined" disabled>View all</v-btn>
           </div>
 
           <v-divider class="my-4" />
 
           <div class="timeline">
+            <div v-if="recent.length === 0" class="t-item">
+              <div class="t-ic">
+                <v-icon size="18">mdi-notebook-outline</v-icon>
+              </div>
+              <div class="t-body">
+                <div class="t-top">
+                  <div class="t-title">No activity yet</div>
+                  <div class="t-when">—</div>
+                </div>
+                <div class="t-sub">Add plants and log care to see history here</div>
+              </div>
+            </div>
+
             <div v-for="r in recent" :key="r.id" class="t-item">
               <div class="t-ic">
                 <v-icon size="18">{{ iconByType(r.type) }}</v-icon>
@@ -93,24 +114,169 @@
 </template>
 
 <script setup>
-const stats = [
-  { label: 'Plants', value: 7, icon: 'mdi-sprout' },
-  { label: 'Needs water', value: 2, icon: 'mdi-water-alert' },
-  { label: 'Due soon', value: 1, icon: 'mdi-timer-sand' },
-  { label: 'Locations', value: 3, icon: 'mdi-map-marker' },
-]
+import { computed, onMounted } from 'vue'
+import { usePlantsStore } from '@/stores/plants'
+import { useLocationsStore } from '@/stores/locations'
 
-const needsWater = [
-  { id: 'p1', name: 'Monstera', location: 'Living', status: 'needs', hint: 'Overdue by 2 days' },
-  { id: 'p2', name: 'Pothos', location: 'Balcony', status: 'due', hint: 'Due today' },
-  { id: 'p3', name: 'Ficus', location: 'Kitchen', status: 'ok', hint: 'Next in 2 days' },
-]
+const plantsStore = usePlantsStore()
+const locationsStore = useLocationsStore()
 
-const recent = [
-  { id: 'l1', type: 'water', plant: 'Ficus', when: 'Today • 10:20', note: '250 ml' },
-  { id: 'l2', type: 'fertilize', plant: 'Monstera', when: 'Yesterday • 18:05', note: 'Liquid fertilizer' },
-  { id: 'l3', type: 'prune', plant: 'Pothos', when: 'Jan 14 • 09:10', note: 'Removed yellow leaves' },
-]
+const normalizeDate = (v) => {
+  if (!v) return null
+  if (v instanceof Date) return v
+  if (typeof v === 'string') {
+    const d = new Date(v)
+    return Number.isNaN(d.getTime()) ? null : d
+  }
+  if (typeof v === 'number') {
+    const d = new Date(v)
+    return Number.isNaN(d.getTime()) ? null : d
+  }
+  if (typeof v === 'object' && typeof v.seconds === 'number') {
+    const d = new Date(v.seconds * 1000)
+    return Number.isNaN(d.getTime()) ? null : d
+  }
+  return null
+}
+
+const pad2 = (n) => String(n).padStart(2, '0')
+
+const formatWhen = (d) => {
+  if (!d) return '—'
+  const now = new Date()
+  const todayKey = `${now.getFullYear()}-${pad2(now.getMonth() + 1)}-${pad2(now.getDate())}`
+  const dKey = `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`
+
+  const hh = pad2(d.getHours())
+  const mm = pad2(d.getMinutes())
+
+  if (dKey === todayKey) return `Today • ${hh}:${mm}`
+
+  const y = new Date(now)
+  y.setDate(now.getDate() - 1)
+  const yKey = `${y.getFullYear()}-${pad2(y.getMonth() + 1)}-${pad2(y.getDate())}`
+  if (dKey === yKey) return `Yesterday • ${hh}:${mm}`
+
+  const months = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ]
+  return `${months[d.getMonth()]} ${d.getDate()} • ${hh}:${mm}`
+}
+
+const startOfDay = (d) => {
+  const x = new Date(d)
+  x.setHours(0, 0, 0, 0)
+  return x
+}
+
+const daysDiff = (a, b) => {
+  const ms = startOfDay(a).getTime() - startOfDay(b).getTime()
+  return Math.round(ms / 86400000)
+}
+
+const rawPlants = computed(() => plantsStore.plants || [])
+
+const plants = computed(() =>
+  rawPlants.value.map((p) => ({
+    id: p.id,
+    name: p?.template?.commonName || 'Unnamed plant',
+    location: p?.settings?.location || '—',
+    waterEveryDays: Number(p?.settings?.waterEveryDays ?? 0),
+    lastWateredAt: normalizeDate(p?.timestamps?.lastWateredAt),
+    createdAt: normalizeDate(p?.timestamps?.createdAt),
+    updatedAt: normalizeDate(p?.timestamps?.updatedAt),
+    _raw: p,
+  })),
+)
+
+const nextWaterDateOf = (p) => {
+  if (!p.lastWateredAt) return null
+  const interval = Number(p.waterEveryDays)
+  if (!Number.isFinite(interval) || interval <= 0) return null
+  const d = new Date(p.lastWateredAt)
+  d.setDate(d.getDate() + interval)
+  return d
+}
+
+const wateringStatusOf = (p) => {
+  const next = nextWaterDateOf(p)
+  if (!next) return { status: 'ok', hint: 'No schedule set', next: null }
+
+  const today = new Date()
+  const diff = daysDiff(next, today)
+
+  if (diff < 0) {
+    const overdue = Math.abs(diff)
+    return { status: 'needs', hint: `Overdue by ${overdue} day${overdue === 1 ? '' : 's'}`, next }
+  }
+  if (diff === 0) return { status: 'due', hint: 'Due today', next }
+  if (diff === 1) return { status: 'due', hint: 'Due tomorrow', next }
+  if (diff <= 3) return { status: 'due', hint: `Next in ${diff} days`, next }
+  return { status: 'ok', hint: `Next in ${diff} days`, next }
+}
+
+const needsWater = computed(() => {
+  const rows = plants.value.map((p) => {
+    const st = wateringStatusOf(p)
+    return {
+      id: p.id || `${p.name}-${p.location}`,
+      name: p.name,
+      location: p.location,
+      status: st.status,
+      hint: st.hint,
+      _sort: st.status === 'needs' ? 0 : st.status === 'due' ? 1 : 2,
+      _next: st.next ? st.next.getTime() : Number.POSITIVE_INFINITY,
+    }
+  })
+
+  rows.sort((a, b) => a._sort - b._sort || a._next - b._next || a.name.localeCompare(b.name))
+  return rows.slice(0, 5).map(({ _sort, _next, ...rest }) => rest)
+})
+
+const recent = computed(() => {
+  const rows = plants.value
+    .map((p) => {
+      const d = p.updatedAt || p.createdAt
+      if (!d) return null
+      return {
+        id: p.id || `${p.name}-${d.getTime()}`,
+        type: 'note',
+        plant: p.name,
+        when: formatWhen(d),
+        note: p.updatedAt ? 'Updated plant details' : 'Added to your collection',
+        _t: d.getTime(),
+      }
+    })
+    .filter(Boolean)
+
+  rows.sort((a, b) => b._t - a._t)
+  return rows.slice(0, 5).map(({ _t, ...rest }) => rest)
+})
+
+const stats = computed(() => {
+  const all = plants.value.length
+  const needs = plants.value.filter((p) => wateringStatusOf(p).status === 'needs').length
+  const dueSoon = plants.value.filter((p) => wateringStatusOf(p).status === 'due').length
+  const loc = (locationsStore.locations || []).length
+
+  return [
+    { label: 'Plants', value: all, icon: 'mdi-sprout' },
+    { label: 'Needs water', value: needs, icon: 'mdi-water-alert' },
+    { label: 'Due soon', value: dueSoon, icon: 'mdi-timer-sand' },
+    { label: 'Locations', value: loc, icon: 'mdi-map-marker' },
+  ]
+})
 
 const iconByType = (t) => {
   if (t === 'water') return 'mdi-water'
@@ -127,9 +293,11 @@ const statusColor = (s) => {
 }
 
 const statusText = (s) => (s === 'needs' ? 'Needs water' : s === 'due' ? 'Due soon' : 'OK')
+
+onMounted(async () => {
+  await Promise.all([plantsStore.fetchPlants?.(), locationsStore.fetchLocations?.()])
+})
 </script>
-
-
 
 <style scoped>
 .page {

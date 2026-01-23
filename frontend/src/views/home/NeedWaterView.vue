@@ -148,6 +148,33 @@ onMounted(async () => {
 const startOfDayIso = (d = new Date()) =>
   new Date(d.getFullYear(), d.getMonth(), d.getDate()).toISOString().slice(0, 10)
 
+const normalizeDate = (v) => {
+  if (!v) return null
+  if (v instanceof Date) return v
+  if (typeof v === 'string') {
+    const d = new Date(v)
+    return Number.isNaN(d.getTime()) ? null : d
+  }
+  if (typeof v === 'number') {
+    const d = new Date(v)
+    return Number.isNaN(d.getTime()) ? null : d
+  }
+  if (typeof v === 'object' && typeof v.seconds === 'number') {
+    const d = new Date(v.seconds * 1000)
+    return Number.isNaN(d.getTime()) ? null : d
+  }
+  if (typeof v === 'object' && typeof v.toDate === 'function') {
+    const d = v.toDate()
+    return d instanceof Date && !Number.isNaN(d.getTime()) ? d : null
+  }
+  return null
+}
+
+const toIsoDate = (v) => {
+  const d = normalizeDate(v)
+  return d ? startOfDayIso(d) : ''
+}
+
 const addDaysIso = (isoDate, days) => {
   const d = new Date(isoDate + 'T00:00:00')
   d.setDate(d.getDate() + Number(days || 0))
@@ -167,11 +194,16 @@ const locationOf = (p) =>
   p?.settings?.location || p?.location || p?.locationName || p?.room || p?.place || '—'
 
 const lastIsoOf = (p) =>
-  (p?.timestamps?.lastWateredAt || p?.timestamps?.createdAt || p?.timestamps?.updatedAt || '')
-    .toString()
-    .slice(0, 10)
+  toIsoDate(p?.timestamps?.lastWateredAt) ||
+  toIsoDate(p?.timestamps?.updatedAt) ||
+  toIsoDate(p?.timestamps?.createdAt) ||
+  toIsoDate(p?.lastWateredAt) ||
+  toIsoDate(p?.updatedAt) ||
+  toIsoDate(p?.createdAt) ||
+  ''
 
-const everyDaysOf = (p) => Number(p?.settings?.waterEveryDays || p?.template?.care?.waterEveryDays || 7)
+const everyDaysOf = (p) =>
+  Number(p?.settings?.waterEveryDays || p?.template?.care?.waterEveryDays || 7)
 
 const dueInDays = (p) => {
   const today = startOfDayIso()
