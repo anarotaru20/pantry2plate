@@ -1,6 +1,6 @@
 const express = require("express");
 const cors = require("cors");
-const userRoutes = require('./routes/users');
+const userRoutes = require("./routes/users");
 const { logger } = require("./config/logger");
 require("dotenv").config();
 require("./config/db");
@@ -9,6 +9,7 @@ const app = express();
 const PORT = 5000;
 
 const plantCatalogRoutes = require("./routes/plantCatalog");
+const plantRoutes = require("./routes/plants");
 
 // middleware
 app.use(cors());
@@ -21,10 +22,8 @@ app.use((req, res, next) => {
 });
 
 // routes
-app.use("/", userRoutes);
+app.use("/", userRoutes, plantRoutes);
 app.use("/plants", plantCatalogRoutes);
-
-
 
 // start server
 app.listen(PORT, () => {
