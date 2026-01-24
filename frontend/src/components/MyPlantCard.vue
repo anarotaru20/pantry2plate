@@ -5,13 +5,6 @@
         <img v-if="plant.photoUrl" :src="plant.photoUrl" alt="plant" class="img" />
         <v-icon v-else size="26">mdi-image-outline</v-icon>
       </div>
-
-      <div class="badges">
-        <div class="badge" :class="statusClass(plant.status)">
-          <v-icon size="16">{{ statusIcon(plant.status) }}</v-icon>
-          <span>{{ statusLabel(plant.status) }}</span>
-        </div>
-      </div>
     </div>
 
     <div class="body">
@@ -29,17 +22,19 @@
         </span>
       </div>
 
-      <div class="note" v-if="plant.note">{{ plant.note }}</div>
+      <div class="note">
+        {{ plant.note?.trim() ? plant.note : 'No description' }}
+      </div>
 
       <div class="actions">
-        <v-btn rounded="xl" variant="outlined" class="btn" @click.stop="emit('edit', plant)">
+        <v-btn
+          rounded="xl"
+          variant="outlined"
+          class="btn btn-edit"
+          @click.stop="emit('edit', plant)"
+        >
           <v-icon start>mdi-pencil</v-icon>
           Edit
-        </v-btn>
-
-        <v-btn rounded="xl" variant="flat" class="btn btn-primary" disabled>
-          <v-icon start>mdi-water</v-icon>
-          Water now
         </v-btn>
 
         <v-btn
@@ -189,4 +184,15 @@ const statusClass = (s) => (s === 'needs' ? 'needs' : s === 'due' ? 'due' : 'ok'
 .btn-danger {
   border-color: rgba(239, 68, 68, 0.35);
 }
+.btn-edit {
+  color: #2563eb;
+}
+.note {
+  margin-top: 10px;
+  font-size: 0.88rem;
+  opacity: 0.75;
+  font-weight: 600;
+  font-style: italic;
+}
+
 </style>

@@ -2,138 +2,178 @@
   <BaseDialog
     :model-value="modelValue"
     @update:modelValue="emit('update:modelValue', $event)"
-    title="New plant"
-    subtitle="Set details before adding it to your collection"
-    max-width="720"
+    :title="mode === 'add' ? 'Add a new plant' : 'Edit plant details'"
+    :subtitle="
+      mode === 'add'
+        ? 'Set details before adding this plant to your collection.'
+        : 'Update this plant’s details and save your changes.'
+    "
+    max-width="560"
   >
-    <div class="preview">
-      <div class="preview-ic">
-        <v-icon size="22">mdi-sprout</v-icon>
+    <v-form v-model="isFormValid" validate-on="input">
+      <div class="preview">
+        <div class="preview-ic">
+          <v-icon size="22">mdi-sprout</v-icon>
+        </div>
+
+        <div class="preview-txt">
+          <div class="p-name">{{ plant?.commonName || plant?.name }}</div>
+          <div class="p-sub">{{ plant?.scientificName || plant?.species }}</div>
+        </div>
+
+        <div class="preview-tags">
+          <v-chip
+            v-if="plant?.petSafe"
+            class="tag tag-safe"
+            rounded="xl"
+            variant="flat"
+            size="small"
+          >
+            <v-icon start size="16">mdi-paw</v-icon>
+            Pet-safe
+          </v-chip>
+
+          <v-chip
+            v-for="(t, idx) in (plant?.tags || []).slice(0, 2)"
+            :key="t"
+            class="tag"
+            :class="idx === 0 ? 'tag-a' : 'tag-b'"
+            rounded="xl"
+            variant="flat"
+            size="small"
+          >
+            {{ t }}
+          </v-chip>
+        </div>
       </div>
 
-      <div class="preview-txt">
-        <div class="p-name">{{ plant?.commonName || plant?.name }}</div>
-        <div class="p-sub">{{ plant?.scientificName || plant?.species }}</div>
-      </div>
+      <v-row dense class="mt12">
+        <v-col cols="12">
+          <v-row dense>
+            <v-col cols="12" md="6">
+              <v-select
+                v-model="form.location"
+                :items="locations"
+                label="Location"
+                variant="outlined"
+                density="comfortable"
+                rounded="xl"
+                :rules="[rules.required('Location')]"
+              />
+            </v-col>
 
-      <div class="preview-tags">
-        <v-chip v-if="plant?.petSafe" class="tag" rounded="xl" variant="flat">
-          <v-icon start size="16">mdi-paw</v-icon>
-          Pet-safe
-        </v-chip>
-        <v-chip
-          v-for="t in (plant?.tags || []).slice(0, 2)"
-          :key="t"
-          class="tag"
+            <v-col cols="12" md="6">
+              <v-text-field
+                v-model="form.waterEveryDays"
+                type="number"
+                min="1"
+                label="Water every (days)"
+                variant="outlined"
+                density="comfortable"
+                rounded="xl"
+                :rules="[rules.waterEvery]"
+              />
+            </v-col>
+          </v-row>
+        </v-col>
+
+        <v-col cols="12">
+          <v-text-field
+            v-model="form.photoUrl"
+            label="Photo URL"
+            placeholder="https://..."
+            variant="outlined"
+            density="comfortable"
+            rounded="xl"
+            :rules="[rules.photoUrl]"
+          />
+        </v-col>
+
+        <v-col v-if="form.photoUrl && isValidPhotoUrl(form.photoUrl)" cols="12">
+          <div class="img-prev">
+            <img :src="form.photoUrl" alt="plant" />
+          </div>
+        </v-col>
+
+        <v-col cols="12">
+          <v-textarea
+            v-model="form.notes"
+            label="Notes"
+            placeholder="Anything to remember?"
+            variant="outlined"
+            density="comfortable"
+            rounded="xl"
+            rows="3"
+            auto-grow
+            :rules="[rules.notes]"
+          />
+        </v-col>
+      </v-row>
+    </v-form>
+
+    <template #actions>
+      <div class="actions-bar">
+        <v-btn rounded="xl" variant="outlined" @click="emit('back')">Back</v-btn>
+
+        <v-btn
           rounded="xl"
           variant="flat"
+          class="save"
+          :disabled="!isFormValid"
+          @click="emit('save')"
         >
-          {{ t }}
-        </v-chip>
+          <v-icon start>mdi-check</v-icon>
+          {{ mode === 'add' ? 'ADD' : 'SAVE' }}
+        </v-btn>
       </div>
-    </div>
-
-    <v-row dense class="mt12">
-      <v-col cols="12" sm="5.5">
-        <v-select
-          :model-value="form.location"
-          @update:modelValue="setField('location', $event)"
-          :items="locations"
-          label="Location"
-          variant="outlined"
-          density="comfortable"
-          rounded="xl"
-          hide-details
-        />
-      </v-col>
-
-      <v-col cols="12" sm="5.5">
-        <v-text-field
-          :model-value="form.waterEveryDays"
-          @update:modelValue="setField('waterEveryDays', Number($event))"
-          type="number"
-          min="1"
-          label="Water every (days)"
-          variant="outlined"
-          density="comfortable"
-          rounded="xl"
-          hide-details
-        />
-      </v-col>
-
-      <!-- add photoUrl -->
-      <v-col cols="12">
-        <v-text-field
-          :model-value="form.photoUrl"
-          @update:modelValue="(v) => setForm({ photoUrl: v })"
-          label="Photo URL"
-          placeholder="https://..."
-          variant="outlined"
-          density="comfortable"
-          rounded="xl"
-          hide-details
-        />
-      </v-col>
-      <div v-if="form.photoUrl" class="img-prev">
-        <img :src="form.photoUrl" alt="plant" />
-      </div>
-
-      <v-col cols="12">
-        <v-textarea
-          :model-value="form.notes"
-          @update:modelValue="setField('notes', $event)"
-          label="Notes"
-          placeholder="Anything to remember?"
-          variant="outlined"
-          density="comfortable"
-          rounded="xl"
-          rows="3"
-          auto-grow
-          hide-details
-        />
-      </v-col>
-    </v-row>
-
-    <div class="hint">
-      Tip: later we’ll save this in Firestore and compute watering status automatically.
-    </div>
-
-    <template #footer>
-      <v-btn rounded="xl" variant="outlined" @click="emit('back')"> Back </v-btn>
-
-      <v-spacer />
-
-      <v-btn rounded="xl" variant="flat" class="save" @click="emit('save')">
-        <v-icon start>mdi-check</v-icon>
-        Add to my plants
-      </v-btn>
     </template>
   </BaseDialog>
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import BaseDialog from './BaseDialog.vue'
+import {
+  isValidPlantLocation,
+  isValidWaterEveryDays,
+  isValidPhotoUrl,
+  isValidPlantNotes,
+} from '@/utils/validators'
 
-const props = defineProps({
-  modelValue: { type: Boolean, default: false },
-  mode: { type: String, default: 'add' },
-  plant: { type: Object, default: null },
-  form: { type: Object, required: true },
-  locations: { type: Array, default: () => [] },
+defineProps({
+  modelValue: Boolean,
+  mode: String,
+  plant: Object,
+  form: Object,
+  locations: Array,
 })
 
-const emit = defineEmits(['update:modelValue', 'update:form', 'back', 'save'])
+const emit = defineEmits(['update:modelValue', 'back', 'save'])
 
-const setField = (key, value) => {
-  emit('update:form', { ...props.form, [key]: value })
-}
+const isFormValid = ref(false)
+
+const rules = computed(() => ({
+  required: (label) => (v) =>
+    isValidPlantLocation(v) ? true : `${label} is required`,
+
+  waterEvery: (v) =>
+    isValidWaterEveryDays(v)
+      ? true
+      : 'Water frequency must be between 1 and 365 days',
+
+  photoUrl: (v) =>
+    isValidPhotoUrl(v) ? true : 'Enter a valid http(s) URL',
+
+  notes: (v) =>
+    isValidPlantNotes(v)
+      ? true
+      : 'Notes must be at least 3 characters or empty',
+}))
 </script>
 
 <style scoped>
 .mt12 {
   margin-top: 12px;
-  gap: 15px;
 }
 
 .preview {
@@ -156,54 +196,23 @@ const setField = (key, value) => {
   border: 1px solid rgba(46, 125, 50, 0.18);
 }
 
-.preview-txt {
-  min-width: 0;
-}
-
-.p-name {
-  font-weight: 950;
-  letter-spacing: -0.2px;
-}
-
-.p-sub {
-  margin-top: 2px;
-  font-size: 0.85rem;
-  opacity: 0.7;
-  font-weight: 650;
-}
-
 .preview-tags {
   margin-left: auto;
   display: flex;
-  flex-wrap: wrap;
   gap: 6px;
-  justify-content: flex-end;
 }
 
-.hint {
-  margin-top: 10px;
-  font-size: 0.86rem;
-  opacity: 0.7;
-  font-weight: 650;
+.actions-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .save {
+  background: #2e7d32;
+  color: white;
   font-weight: 900;
-  background: rgba(46, 125, 50, 0.14);
-  border: 1px solid rgba(46, 125, 50, 0.22);
-}
-.img-prev {
-  margin-top: 10px;
-  border-radius: 18px;
-  overflow: hidden;
-  border: 1px solid rgba(20, 31, 24, 0.08);
-  background: rgba(255, 255, 255, 0.7);
-}
-
-.img-prev img {
-  width: 100%;
-  height: 180px;
-  object-fit: cover;
-  display: block;
+  padding: 10px 22px;
+  border-radius: 999px !important;
 }
 </style>

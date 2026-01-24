@@ -2,14 +2,8 @@
   <div class="page">
     <div class="hdr">
       <div>
+        <div class="title">Dashboard</div>
         <div class="sub">Your plant overview for today</div>
-      </div>
-
-      <div class="hdr-actions">
-        <v-btn rounded="xl" variant="outlined" disabled>
-          <v-icon start>mdi-plus</v-icon>
-          Add plant
-        </v-btn>
       </div>
     </div>
 
@@ -38,34 +32,43 @@
           <v-divider class="my-4" />
 
           <div class="list">
-            <div v-if="needsWater.length === 0" class="row">
-              <div class="row-left">
-                <div class="dot" :style="{ background: statusColor('ok') }"></div>
-                <div>
-                  <div class="row-title">All good 🎉</div>
-                  <div class="row-sub">No plants need watering right now</div>
+            <template v-if="needsWater.length === 0">
+              <div class="row">
+                <div class="row-left">
+                  <div class="dot" :style="{ background: statusColor('ok') }"></div>
+                  <div>
+                    <div class="row-title">All good 🎉</div>
+                    <div class="row-sub">No plants need watering right now</div>
+                  </div>
                 </div>
               </div>
-            </div>
+            </template>
 
-            <div v-for="p in needsWater" :key="p.id" class="row">
-              <div class="row-left">
-                <div class="dot" :style="{ background: statusColor(p.status) }"></div>
-                <div>
-                  <div class="row-title">{{ p.name }}</div>
-                  <div class="row-sub">{{ p.location }} • {{ p.hint }}</div>
+            <template v-else>
+              <div
+                v-for="(p, i) in needsWater"
+                :key="p.id || `${p.name}-${p.location}-${i}`"
+                class="row"
+              >
+                <div class="row-left">
+                  <div class="dot" :style="{ background: statusColor(p.status) }"></div>
+                  <div>
+                    <div class="row-title">{{ p.name }}</div>
+                    <div class="row-sub">{{ p.location }} • {{ p.hint }}</div>
+                  </div>
+                </div>
+
+                <div class="row-right">
+                  <v-chip rounded="xl" class="status" :class="p.status || 'ok'" variant="flat">
+                    {{ statusText(p.status, p) }}
+                  </v-chip>
+
+                  <v-btn icon variant="text" disabled>
+                    <v-icon class="water-icon">mdi-water</v-icon>
+                  </v-btn>
                 </div>
               </div>
-
-              <div class="row-right">
-                <v-chip rounded="xl" class="status" variant="flat">
-                  {{ statusText(p.status) }}
-                </v-chip>
-                <v-btn icon variant="text" disabled>
-                  <v-icon>mdi-water</v-icon>
-                </v-btn>
-              </div>
-            </div>
+            </template>
           </div>
         </v-card>
       </v-col>
@@ -73,8 +76,7 @@
       <v-col cols="12" md="5">
         <v-card class="card" rounded="2xl" elevation="0">
           <div class="card-h">
-            <div class="card-t">Recent activity</div>
-            <v-btn rounded="xl" variant="outlined" disabled>View all</v-btn>
+            <div class="card-t" style="padding-top: 7px">Recent activity</div>
           </div>
 
           <v-divider class="my-4" />
@@ -93,7 +95,11 @@
               </div>
             </div>
 
-            <div v-for="r in recent" :key="r.id" class="t-item">
+            <div
+              v-for="(r, i) in recent"
+              :key="r.id || `${r.type}-${r.plant}-${r.when}-${i}`"
+              class="t-item"
+            >
               <div class="t-ic">
                 <v-icon size="18">{{ iconByType(r.type) }}</v-icon>
               </div>
@@ -117,9 +123,15 @@
 import { computed, onMounted } from 'vue'
 import { usePlantsStore } from '@/stores/plants'
 import { useLocationsStore } from '@/stores/locations'
+import { useCareLogsStore } from '@/stores/careLogs'
 
 const plantsStore = usePlantsStore()
 const locationsStore = useLocationsStore()
+const careLogsStore = useCareLogsStore()
+
+const rawPlants = computed(() => plantsStore.plants || [])
+const rawLocations = computed(() => locationsStore.locations || [])
+const rawCareLogs = computed(() => careLogsStore?.logs || careLogsStore?.careLogs || [])
 
 const normalizeDate = (v) => {
   if (!v) return null
@@ -136,7 +148,31 @@ const normalizeDate = (v) => {
     const d = new Date(v.seconds * 1000)
     return Number.isNaN(d.getTime()) ? null : d
   }
+  if (typeof v === 'object' && typeof v.toDate === 'function') {
+    const d = v.toDate()
+    return d instanceof Date && !Number.isNaN(d.getTime()) ? d : null
+  }
   return null
+}
+
+const startOfDayIso = (d = new Date()) =>
+  new Date(d.getFullYear(), d.getMonth(), d.getDate()).toISOString().slice(0, 10)
+
+const toIsoDate = (v) => {
+  const d = normalizeDate(v)
+  return d ? startOfDayIso(d) : ''
+}
+
+const addDaysIso = (isoDate, days) => {
+  const d = new Date(isoDate + 'T00:00:00')
+  d.setDate(d.getDate() + Number(days || 0))
+  return d.toISOString().slice(0, 10)
+}
+
+const diffDays = (fromIso, toIso) => {
+  const a = new Date(fromIso + 'T00:00:00').getTime()
+  const b = new Date(toIso + 'T00:00:00').getTime()
+  return Math.round((b - a) / 86400000)
 }
 
 const pad2 = (n) => String(n).padStart(2, '0')
@@ -174,91 +210,158 @@ const formatWhen = (d) => {
   return `${months[d.getMonth()]} ${d.getDate()} • ${hh}:${mm}`
 }
 
-const startOfDay = (d) => {
-  const x = new Date(d)
-  x.setHours(0, 0, 0, 0)
-  return x
-}
+const plantNameOf = (p) =>
+  p?.template?.commonName || p?.commonName || p?.name || p?.template?.species || 'Unnamed plant'
 
-const daysDiff = (a, b) => {
-  const ms = startOfDay(a).getTime() - startOfDay(b).getTime()
-  return Math.round(ms / 86400000)
-}
+const locationOf = (p) =>
+  p?.settings?.location || p?.location || p?.locationName || p?.room || p?.place || '—'
 
-const rawPlants = computed(() => plantsStore.plants || [])
+const everyDaysOf = (p) =>
+  Number(p?.settings?.waterEveryDays || p?.waterEveryDays || p?.template?.care?.waterEveryDays || 7)
+
+const lastIsoOf = (p) =>
+  toIsoDate(p?.timestamps?.lastWateredAt) ||
+  toIsoDate(p?.lastWateredAt) ||
+  toIsoDate(p?.timestamps?.updatedAt) ||
+  toIsoDate(p?.updatedAt) ||
+  toIsoDate(p?.timestamps?.createdAt) ||
+  toIsoDate(p?.createdAt) ||
+  startOfDayIso()
 
 const plants = computed(() =>
   rawPlants.value.map((p) => ({
     id: p.id,
-    name: p?.template?.commonName || 'Unnamed plant',
-    location: p?.settings?.location || '—',
-    waterEveryDays: Number(p?.settings?.waterEveryDays ?? 0),
-    lastWateredAt: normalizeDate(p?.timestamps?.lastWateredAt),
-    createdAt: normalizeDate(p?.timestamps?.createdAt),
-    updatedAt: normalizeDate(p?.timestamps?.updatedAt),
-    _raw: p,
+    name: plantNameOf(p),
+    location: locationOf(p),
+    every: everyDaysOf(p),
+    lastIso: lastIsoOf(p),
+    createdAt: normalizeDate(p?.timestamps?.createdAt || p?.createdAt),
+    updatedAt: normalizeDate(p?.timestamps?.updatedAt || p?.updatedAt),
   })),
 )
 
-const nextWaterDateOf = (p) => {
-  if (!p.lastWateredAt) return null
-  const interval = Number(p.waterEveryDays)
-  if (!Number.isFinite(interval) || interval <= 0) return null
-  const d = new Date(p.lastWateredAt)
-  d.setDate(d.getDate() + interval)
-  return d
+const plantsById = computed(() => {
+  const m = new Map()
+  for (const p of rawPlants.value) m.set(p.id, p)
+  return m
+})
+
+const dueInDays = (p) => {
+  const todayIso = startOfDayIso()
+  const dueIso = addDaysIso(p.lastIso, p.every)
+  return diffDays(todayIso, dueIso)
 }
 
 const wateringStatusOf = (p) => {
-  const next = nextWaterDateOf(p)
-  if (!next) return { status: 'ok', hint: 'No schedule set', next: null }
+  const d = dueInDays(p)
 
-  const today = new Date()
-  const diff = daysDiff(next, today)
-
-  if (diff < 0) {
-    const overdue = Math.abs(diff)
-    return { status: 'needs', hint: `Overdue by ${overdue} day${overdue === 1 ? '' : 's'}`, next }
+  if (d < 0) {
+    const overdue = Math.abs(d)
+    return { status: 'needs', hint: `Overdue by ${overdue} day${overdue === 1 ? '' : 's'}` }
   }
-  if (diff === 0) return { status: 'due', hint: 'Due today', next }
-  if (diff === 1) return { status: 'due', hint: 'Due tomorrow', next }
-  if (diff <= 3) return { status: 'due', hint: `Next in ${diff} days`, next }
-  return { status: 'ok', hint: `Next in ${diff} days`, next }
+
+  if (d === 0) return { status: 'today', hint: 'Due today' }
+
+  if (d === 1) return { status: 'due', hint: 'Due tomorrow' }
+
+  if (d <= 3) return { status: 'due', hint: `Next in ${d} days` }
+
+  return { status: 'ok', hint: `Next in ${d} days` }
 }
 
 const needsWater = computed(() => {
   const rows = plants.value.map((p) => {
     const st = wateringStatusOf(p)
+    const d = dueInDays(p)
     return {
-      id: p.id || `${p.name}-${p.location}`,
+      id: p.id || null,
       name: p.name,
       location: p.location,
       status: st.status,
       hint: st.hint,
-      _sort: st.status === 'needs' ? 0 : st.status === 'due' ? 1 : 2,
-      _next: st.next ? st.next.getTime() : Number.POSITIVE_INFINITY,
+      dueDays: d,
+      _sort: st.status === 'needs' ? 0 : st.status === 'today' ? 1 : st.status === 'due' ? 2 : 3,
     }
   })
 
-  rows.sort((a, b) => a._sort - b._sort || a._next - b._next || a.name.localeCompare(b.name))
-  return rows.slice(0, 5).map(({ _sort, _next, ...rest }) => rest)
+  rows.sort((a, b) => a._sort - b._sort || a.dueDays - b.dueDays || a.name.localeCompare(b.name))
+  return rows.slice(0, 5).map(({ _sort, ...rest }) => rest)
 })
 
 const recent = computed(() => {
-  const rows = plants.value
-    .map((p) => {
-      const d = p.updatedAt || p.createdAt
-      if (!d) return null
-      return {
-        id: p.id || `${p.name}-${d.getTime()}`,
-        type: 'note',
-        plant: p.name,
-        when: formatWhen(d),
-        note: p.updatedAt ? 'Updated plant details' : 'Added to your collection',
-        _t: d.getTime(),
-      }
+  const rows = []
+
+  for (const p of plants.value) {
+    const created = p.createdAt
+    const updated = p.updatedAt
+    const isUpdate = !!updated && (!created || updated.getTime() !== created.getTime())
+    const d = isUpdate ? updated : created
+    if (!d) continue
+
+    rows.push({
+      id: `plant-${p.id || p.name}-${d.getTime()}`,
+      type: 'plant',
+      plant: p.name,
+      when: formatWhen(d),
+      note: isUpdate ? 'Updated plant details' : 'Add new plant',
+      _t: d.getTime(),
     })
-    .filter(Boolean)
+  }
+
+  for (const l of rawLocations.value) {
+    const name = l?.name || 'Location'
+    const created = normalizeDate(l?.timestamps?.createdAt || l?.createdAt)
+    const updated = normalizeDate(l?.timestamps?.updatedAt || l?.updatedAt)
+    const isUpdate = !!updated && (!created || updated.getTime() !== created.getTime())
+    const d = isUpdate ? updated : created
+    if (!d) continue
+
+    rows.push({
+      id: `location-${l?.id || name}-${d.getTime()}`,
+      type: 'location',
+      plant: name,
+      when: formatWhen(d),
+      note: isUpdate ? 'Updated location details' : 'Add new location',
+      _t: d.getTime(),
+    })
+  }
+
+  for (const log of rawCareLogs.value) {
+    const created = normalizeDate(
+      log?.timestamps?.createdAt || log?.createdAt || log?.at || log?.date,
+    )
+    const updated = normalizeDate(log?.timestamps?.updatedAt || log?.updatedAt)
+    const d = updated || created
+    if (!d) continue
+
+    const plantId = log?.plantId || log?.plant?.id
+    const plantRaw = plantId ? plantsById.value.get(plantId) : null
+    const plantName =
+      plantRaw?.template?.commonName || plantRaw?.commonName || plantRaw?.name || 'Plant'
+
+    const t = log?.type || log?.action || 'care'
+    const label =
+      t === 'water'
+        ? 'Water'
+        : t === 'fertilize'
+          ? 'Fertilize'
+          : t === 'prune'
+            ? 'Prune'
+            : t === 'repot'
+              ? 'Repot'
+              : 'Care'
+
+    const isUpdate = !!updated && !!created && updated.getTime() !== created.getTime()
+
+    rows.push({
+      id: `care-${log?.id || plantName}-${d.getTime()}`,
+      type: t,
+      plant: plantName,
+      when: formatWhen(d),
+      note: isUpdate ? `Updated care: ${label}` : `Added care: ${label}`,
+      _t: d.getTime(),
+    })
+  }
 
   rows.sort((a, b) => b._t - a._t)
   return rows.slice(0, 5).map(({ _t, ...rest }) => rest)
@@ -266,13 +369,19 @@ const recent = computed(() => {
 
 const stats = computed(() => {
   const all = plants.value.length
-  const needs = plants.value.filter((p) => wateringStatusOf(p).status === 'needs').length
-  const dueSoon = plants.value.filter((p) => wateringStatusOf(p).status === 'due').length
-  const loc = (locationsStore.locations || []).length
+
+  const waterToday = plants.value.filter((p) => dueInDays(p) <= 0).length
+
+  const dueSoon = plants.value.filter((p) => {
+    const d = dueInDays(p)
+    return d >= 1 && d <= 3
+  }).length
+
+  const loc = rawLocations.value.length
 
   return [
     { label: 'Plants', value: all, icon: 'mdi-sprout' },
-    { label: 'Needs water', value: needs, icon: 'mdi-water-alert' },
+    { label: 'Water today', value: waterToday, icon: 'mdi-water' },
     { label: 'Due soon', value: dueSoon, icon: 'mdi-timer-sand' },
     { label: 'Locations', value: loc, icon: 'mdi-map-marker' },
   ]
@@ -283,6 +392,8 @@ const iconByType = (t) => {
   if (t === 'fertilize') return 'mdi-sprout'
   if (t === 'prune') return 'mdi-content-cut'
   if (t === 'repot') return 'mdi-flower'
+  if (t === 'plant') return 'mdi-sprout'
+  if (t === 'location') return 'mdi-map-marker'
   return 'mdi-notebook-outline'
 }
 
@@ -292,10 +403,20 @@ const statusColor = (s) => {
   return 'rgba(34, 197, 94, 0.12)'
 }
 
-const statusText = (s) => (s === 'needs' ? 'Needs water' : s === 'due' ? 'Due soon' : 'OK')
+const statusText = (s) => {
+  if (s === 'needs') return 'Needs water'
+  if (s === 'today') return 'Today'
+  if (s === 'due') return 'Due soon'
+  return 'OK'
+}
 
 onMounted(async () => {
-  await Promise.all([plantsStore.fetchPlants?.(), locationsStore.fetchLocations?.()])
+  const tasks = [
+    plantsStore.fetchPlants?.(),
+    locationsStore.fetchLocations?.(),
+    careLogsStore.fetchLogs?.() || careLogsStore.fetchCareLogs?.(),
+  ].filter(Boolean)
+  await Promise.allSettled(tasks)
 })
 </script>
 
@@ -384,6 +505,8 @@ onMounted(async () => {
 .chip {
   font-weight: 900;
   opacity: 0.9;
+  background: #2e7d32 !important;
+  color: #ffffff !important;
 }
 
 .list {
@@ -436,6 +559,27 @@ onMounted(async () => {
   font-weight: 900;
 }
 
+:deep(.status.due) {
+  background-color: rgba(245, 158, 11, 0.25) !important;
+  color: #92400e !important;
+}
+
+:deep(.status.needs) {
+  background-color: rgba(239, 68, 68, 0.25) !important;
+  color: #7f1d1d !important;
+}
+
+:deep(.status.ok) {
+  background-color: rgba(34, 197, 94, 0.25) !important;
+  color: #14532d !important;
+}
+
+:deep(.status.due .v-chip__underlay),
+:deep(.status.needs .v-chip__underlay),
+:deep(.status.ok .v-chip__underlay) {
+  opacity: 0 !important;
+}
+
 .timeline {
   display: grid;
   gap: 12px;
@@ -482,5 +626,14 @@ onMounted(async () => {
   font-size: 0.85rem;
   opacity: 0.75;
   font-weight: 650;
+}
+
+.water-icon {
+  color: #3b82f6 !important;
+}
+
+:deep(.status.today) {
+  background-color: rgba(59, 130, 246, 0.25) !important;
+  color: #1d4ed8 !important;
 }
 </style>

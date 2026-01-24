@@ -45,3 +45,27 @@ export const isValidCareNotes = (notes = '') => {
   return v.length === 0 || v.length >= 3
 }
 
+// plants
+export const isValidPlantLocation = (location = '') =>
+  !!location && String(location).trim().length > 0
+
+export const isValidWaterEveryDays = (days) => {
+  const n = Number(days)
+  return Number.isFinite(n) && n >= 1 && n <= 365
+}
+
+export const isValidPhotoUrl = (url = '') => {
+  const v = String(url || '').trim()
+  if (!v) return true
+  try {
+    const u = new URL(v)
+    return u.protocol === 'http:' || u.protocol === 'https:'
+  } catch {
+    return false
+  }
+}
+
+export const isValidPlantNotes = (notes = '') => {
+  const v = String(notes || '').trim()
+  return v.length === 0 || v.length >= 3
+}

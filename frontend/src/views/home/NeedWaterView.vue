@@ -24,7 +24,7 @@
         </div>
       </div>
 
-      <div class="sum-item">
+      <div class="sum-item sum-upcoming">
         <div class="sum-icon"><v-icon>mdi-calendar</v-icon></div>
         <div>
           <div class="sum-val">{{ summary.upcoming }}</div>
@@ -49,11 +49,11 @@
           <div class="overdue-wrap">
             <BaseCard :title="p.name" :subtitle="p.location">
               <template #chips>
-                <v-chip color="error" size="small" variant="flat">
+                <v-chip size="small" variant="flat" class="chip chip-overdue">
                   <v-icon start size="16">mdi-alert</v-icon>
                   Overdue
                 </v-chip>
-                <v-chip size="small" variant="flat">
+                <v-chip size="small" variant="flat" class="chip chip-date">
                   <v-icon start size="16">mdi-calendar</v-icon>
                   {{ Math.abs(dueInDays(p)) }} days late
                 </v-chip>
@@ -81,11 +81,11 @@
         <v-col v-for="p in groups.today" :key="p.id" cols="12" md="6" lg="4">
           <BaseCard :title="p.name" :subtitle="p.location">
             <template #chips>
-              <v-chip size="small" variant="flat">
+              <v-chip size="small" variant="flat" class="chip chip-today">
                 <v-icon start size="16">mdi-water</v-icon>
                 Today
               </v-chip>
-              <v-chip size="small" variant="flat">
+              <v-chip size="small" variant="flat" class="chip chip-date">
                 <v-icon start size="16">mdi-clock-outline</v-icon>
                 Every {{ p.every }} days
               </v-chip>
@@ -96,7 +96,13 @@
             </div>
 
             <template #actions>
-              <v-btn rounded="xl" variant="outlined" @click="markDone(p)">Mark watered</v-btn>
+              <v-btn
+                rounded="xl"
+                variant="outlined"
+                style="background-color: #3a6ff0; color: #fff; font-weight: 600"
+                @click="markDone(p)"
+                >Mark watered</v-btn
+              >
             </template>
           </BaseCard>
         </v-col>
@@ -109,11 +115,11 @@
         <v-col v-for="p in groups.upcoming" :key="p.id" cols="12" md="6" lg="4">
           <BaseCard :title="p.name" :subtitle="p.location">
             <template #chips>
-              <v-chip size="small" variant="flat">
+              <v-chip size="small" variant="flat" class="chip chip-upcoming">
                 <v-icon start size="16">mdi-calendar</v-icon>
                 In {{ dueInDays(p) }} days
               </v-chip>
-              <v-chip size="small" variant="flat">
+              <v-chip size="small" variant="flat" class="chip chip-date">
                 <v-icon start size="16">mdi-clock-outline</v-icon>
                 Every {{ p.every }} days
               </v-chip>
@@ -145,13 +151,20 @@ onMounted(async () => {
   await plantsStore.fetchPlants()
 })
 
-const startOfDayIso = (d = new Date()) =>
-  new Date(d.getFullYear(), d.getMonth(), d.getDate()).toISOString().slice(0, 10)
+const localIsoDate = (d = new Date()) => {
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
+
+const startOfDayIso = (d = new Date()) => localIsoDate(d)
 
 const normalizeDate = (v) => {
   if (!v) return null
   if (v instanceof Date) return v
   if (typeof v === 'string') {
+    if (/^\d{4}-\d{2}-\d{2}$/.test(v)) return v
     const d = new Date(v)
     return Number.isNaN(d.getTime()) ? null : d
   }
@@ -172,13 +185,15 @@ const normalizeDate = (v) => {
 
 const toIsoDate = (v) => {
   const d = normalizeDate(v)
-  return d ? startOfDayIso(d) : ''
+  if (!d) return ''
+  if (typeof d === 'string') return d
+  return localIsoDate(d)
 }
 
 const addDaysIso = (isoDate, days) => {
   const d = new Date(isoDate + 'T00:00:00')
   d.setDate(d.getDate() + Number(days || 0))
-  return d.toISOString().slice(0, 10)
+  return localIsoDate(d)
 }
 
 const diffDays = (fromIso, toIso) => {
@@ -202,8 +217,7 @@ const lastIsoOf = (p) =>
   toIsoDate(p?.createdAt) ||
   ''
 
-const everyDaysOf = (p) =>
-  Number(p?.settings?.waterEveryDays || p?.template?.care?.waterEveryDays || 7)
+const everyDaysOf = (p) => Number(p?.settings?.waterEveryDays || 7)
 
 const dueInDays = (p) => {
   const today = startOfDayIso()
@@ -262,6 +276,19 @@ const summary = computed(() => ({
 
 const markDone = async (p) => {
   const today = startOfDayIso()
+
+  const idx = (plantsStore.plants || []).findIndex((x) => x?.id === p.plantId)
+  if (idx !== -1) {
+    const cur = plantsStore.plants[idx] || {}
+    plantsStore.plants[idx] = {
+      ...cur,
+      timestamps: {
+        ...(cur.timestamps || {}),
+        lastWateredAt: today,
+      },
+    }
+  }
+
   await careLogsStore.addCareLog({
     plantId: p.plantId,
     plantName: p.name,
@@ -269,6 +296,12 @@ const markDone = async (p) => {
     date: today,
     notes: '',
   })
+
+  await plantsStore.updatePlant(p.plantId, {
+    lastWateredAt: today,
+    timestamps: { lastWateredAt: today },
+  })
+
   await plantsStore.fetchPlants()
 }
 </script>
@@ -333,11 +366,18 @@ const markDone = async (p) => {
 }
 
 .sum-overdue {
-  border-color: rgba(198, 40, 40, 0.25);
+  border: 2px solid rgba(198, 40, 40, 0.25);
+  color: #c62828;
 }
 
 .sum-today {
-  border-color: rgba(21, 101, 192, 0.22);
+  border: 2px solid rgba(30, 143, 36, 0.322);
+  color: #2e7d32;
+}
+
+.sum-upcoming {
+  border: 2px solid rgba(251, 140, 0, 0.28);
+  color: #fb8c00;
 }
 
 .group {
@@ -382,17 +422,45 @@ const markDone = async (p) => {
   margin-top: 10px;
   opacity: 0.78;
   font-weight: 700;
+  font-style: italic;
 }
 
 .meta-strong {
   font-weight: 950;
   opacity: 0.95;
+  font-style: italic;
 }
 
 .overdue-wrap {
   border: 1px solid rgba(198, 40, 40, 0.22);
   background: rgba(198, 40, 40, 0.06);
   padding: 10px;
+}
+
+.chip {
+  font-weight: 800;
+  border-radius: 999px;
+  padding: 4px 10px;
+}
+
+.chip-overdue {
+  background: rgba(198, 40, 40, 0.14);
+  color: #c62828;
+}
+
+.chip-today {
+  background: rgba(46, 125, 50, 0.16);
+  color: #2e7d32;
+}
+
+.chip-upcoming {
+  background: rgba(251, 140, 0, 0.18);
+  color: #b45309;
+}
+
+.chip-date {
+  background: rgba(15, 23, 42, 0.08);
+  color: rgba(15, 23, 42, 0.8);
 }
 
 @media (max-width: 960px) {

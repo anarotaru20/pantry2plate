@@ -66,43 +66,64 @@ async function addPlant(req, res) {
 
 async function updatePlant(req, res) {
   try {
-    const uid = req.user?.uid;
-    if (!uid) return res.status(401).json({ message: "Unauthorized" });
+    const uid = req.user?.uid
+    if (!uid) return res.status(401).json({ message: 'Unauthorized' })
 
-    const id = str(req.params?.id);
-    if (!id) return res.status(400).json({ message: "id is required" });
+    const id = str(req.params?.id)
+    if (!id) return res.status(400).json({ message: 'id is required' })
 
-    const location = str(req.body?.location);
-    const waterEveryDays = Number(req.body?.waterEveryDays);
-    const notes = str(req.body?.notes);
+    const ref = db.collection('users').doc(uid).collection('myPlants').doc(id)
+    const snap = await ref.get()
+    if (!snap.exists) return res.status(404).json({ message: 'Plant not found' })
 
-    if (!location)
-      return res.status(400).json({ message: "location is required" });
-    if (!Number.isFinite(waterEveryDays) || waterEveryDays <= 0)
-      return res.status(400).json({ message: "waterEveryDays must be > 0" });
+    const now = new Date().toISOString()
+    const patch = {}
 
-    const ref = db.collection("users").doc(uid).collection("myPlants").doc(id);
-    const snap = await ref.get();
-    if (!snap.exists)
-      return res.status(404).json({ message: "Plant not found" });
+    if ('location' in (req.body || {})) {
+      const location = str(req.body?.location)
+      if (!location) return res.status(400).json({ message: 'location is required' })
+      patch['settings.location'] = location
+    }
 
-    const now = new Date().toISOString();
+    if ('waterEveryDays' in (req.body || {})) {
+      const waterEveryDays = Number(req.body?.waterEveryDays)
+      if (!Number.isFinite(waterEveryDays) || waterEveryDays <= 0)
+        return res.status(400).json({ message: 'waterEveryDays must be > 0' })
+      patch['settings.waterEveryDays'] = Math.trunc(waterEveryDays)
+    }
 
-    await ref.update({
-      "settings.location": location,
-      "settings.waterEveryDays": Math.trunc(waterEveryDays),
-      "settings.notes": notes || null,
-      "timestamps.updatedAt": now,
-    });
+    if ('notes' in (req.body || {})) {
+      const notes = str(req.body?.notes)
+      patch['settings.notes'] = notes || null
+    }
 
-    const updated = await ref.get();
-    const data = updated.data();
-    return res.status(200).json({ plant: { id: updated.id, ...data } });
+    if ('timestamps' in (req.body || {})) {
+      const last = req.body?.timestamps?.lastWateredAt
+      const lastStr = typeof last === 'string' ? last.trim() : ''
+      if (!lastStr) return res.status(400).json({ message: 'timestamps.lastWateredAt is required' })
+      patch['timestamps.lastWateredAt'] = lastStr
+    }
+
+    if ('lastWateredAt' in (req.body || {})) {
+      const last = str(req.body?.lastWateredAt)
+      if (!last) return res.status(400).json({ message: 'lastWateredAt is required' })
+      patch['timestamps.lastWateredAt'] = last
+    }
+
+    if (!Object.keys(patch).length)
+      return res.status(400).json({ message: 'No valid fields to update' })
+
+    patch['timestamps.updatedAt'] = now
+
+    await ref.update(patch)
+
+    const updated = await ref.get()
+    const data = updated.data()
+    return res.status(200).json({ plant: { id: updated.id, ...data } })
   } catch {
-    return res.status(500).json({ message: "Failed to update plant" });
+    return res.status(500).json({ message: 'Failed to update plant' })
   }
 }
-
 async function deletePlant(req, res) {
   try {
     const uid = req.user?.uid;
