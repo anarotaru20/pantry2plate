@@ -38,16 +38,18 @@
         <template #selection="{ item }">
           <div class="sel-row">
             <v-icon size="18">{{ item.raw.icon }}</v-icon>
-            <span>{{ item.title }}</span>
+            <span>{{ item.raw.title }}</span>
           </div>
         </template>
 
         <template #item="{ props, item }">
-          <v-list-item v-bind="props">
+          <v-list-item v-bind="props" :title="null">
             <template #prepend>
               <v-icon size="18">{{ item.raw.icon }}</v-icon>
             </template>
-            <v-list-item-title>{{ item.title }}</v-list-item-title>
+            <template #title>
+              <span>{{ item.raw.title }}</span>
+            </template>
           </v-list-item>
         </template>
       </v-select>
@@ -73,42 +75,37 @@
           <v-col v-for="item in g.items" :key="item.id" cols="12" md="6" lg="4">
             <BaseCard :title="item.plant" :subtitle="labelByType(item.action)">
               <template #chips>
-                <v-chip size="small" variant="flat">
+                <v-chip
+                  size="small"
+                  variant="flat"
+                  :class="['action-chip', actionClass(item.action)]"
+                >
                   <v-icon start size="16">{{ iconByType(item.action) }}</v-icon>
-                  {{ item.action }}
+                  {{ labelChip(item.action) }}
                 </v-chip>
-                <v-chip size="small" variant="flat">
+
+                <v-chip size="small" variant="flat" class="date-chip">
                   <v-icon start size="16">mdi-calendar</v-icon>
                   {{ item.date }}
                 </v-chip>
               </template>
 
-              <div v-if="item.notes">{{ item.notes }}</div>
+              <div class="notes">
+                {{ (item.notes || '').trim() || 'No description' }}
+              </div>
 
               <template #menu>
-                <v-menu location="bottom end">
-                  <template #activator="{ props }">
-                    <v-btn v-bind="props" icon variant="text">
-                      <v-icon>mdi-dots-vertical</v-icon>
-                    </v-btn>
-                  </template>
+                <div class="card-actions-top">
+                  <v-btn size="small" variant="text" class="btn-edit" @click="openEdit(item)">
+                    <v-icon start size="16">mdi-pencil</v-icon>
+                    Edit
+                  </v-btn>
 
-                  <v-list density="compact">
-                    <v-list-item @click="openEdit(item)">
-                      <template #prepend>
-                        <v-icon size="18">mdi-pencil</v-icon>
-                      </template>
-                      <v-list-item-title>Edit</v-list-item-title>
-                    </v-list-item>
-
-                    <v-list-item @click="removeLog(item.id)">
-                      <template #prepend>
-                        <v-icon size="18">mdi-delete</v-icon>
-                      </template>
-                      <v-list-item-title>Delete</v-list-item-title>
-                    </v-list-item>
-                  </v-list>
-                </v-menu>
+                  <v-btn size="small" variant="text" class="btn-delete" @click="removeLog(item.id)">
+                    <v-icon start size="16">mdi-delete</v-icon>
+                    Delete
+                  </v-btn>
+                </div>
               </template>
             </BaseCard>
           </v-col>
@@ -116,36 +113,78 @@
       </div>
     </div>
 
-    <BaseDialog v-model="dialog" :title="dialogTitle" :max-width="480">
-      <v-select
-        v-model="form.plantId"
-        :items="plantItems"
-        item-title="title"
-        item-value="value"
-        label="Plant"
-        variant="outlined"
-        rounded="xl"
-      />
+    <BaseDialog
+      v-model="dialog"
+      :title="dialogTitle"
+      :subtitle="
+        editingId
+          ? 'Update this care entry to keep your plant history accurate.'
+          : 'Add care details before saving this log to your history.'
+      "
+      :max-width="480"
+    >
+      <div class="d-flex flex-column ga-4">
+        <v-select
+          v-model="form.plantId"
+          :items="plantItems"
+          item-title="title"
+          item-value="value"
+          label="Plant"
+          variant="outlined"
+          rounded="xl"
+          :error="!!errors.plantId"
+          :error-messages="errors.plantId"
+        />
 
-      <v-select
-        v-model="form.action"
-        :items="typeItems.filter((x) => x.value !== 'all')"
-        item-title="title"
-        item-value="value"
-        label="Action"
-        variant="outlined"
-        rounded="xl"
-      />
+        <v-select
+          v-model="form.action"
+          :items="typeItems.filter((x) => x.value !== 'all')"
+          item-title="title"
+          item-value="value"
+          label="Action"
+          variant="outlined"
+          rounded="xl"
+          :error="!!errors.action"
+          :error-messages="errors.action"
+        />
 
-      <v-text-field v-model="form.date" label="Date" type="date" variant="outlined" rounded="xl" />
-      <v-textarea v-model="form.notes" label="Notes" rows="3" variant="outlined" rounded="xl" />
+        <v-text-field
+          v-model="form.date"
+          label="Date"
+          type="date"
+          variant="outlined"
+          rounded="xl"
+          :max="new Date().toISOString().slice(0, 10)"
+          :error="!!errors.date"
+          :error-messages="errors.date"
+        />
+
+        <v-textarea
+          v-model="form.notes"
+          label="Notes"
+          rows="3"
+          variant="outlined"
+          rounded="xl"
+          :error="!!errors.notes"
+          :error-messages="errors.notes"
+        />
+      </div>
 
       <template #actions>
-        <v-btn rounded="xl" variant="text" @click="dialog = false">Cancel</v-btn>
-        <v-btn rounded="xl" variant="flat" @click="save">
-          Save
-          <v-icon end>mdi-check</v-icon>
-        </v-btn>
+        <div class="actions-row">
+          <v-btn rounded="xl" variant="outlined" @click="dialog = false"> Back </v-btn>
+
+          <v-btn
+            rounded="xl"
+            variant="flat"
+            class="btn-primary"
+            @click="save"
+            :disabled="!form.plantId || !form.action || !form.date "
+          >
+            <v-icon start>mdi-check</v-icon>
+            {{ editingId ? 'UPDATE' : 'ADD' }}
+          </v-btn>
+        </div>
       </template>
     </BaseDialog>
   </div>
@@ -158,6 +197,12 @@ import BaseCard from '@/components/BaseCard.vue'
 import BaseDialog from '@/components/dialog/BaseDialog.vue'
 import { useCareLogsStore } from '@/stores/careLogs'
 import { usePlantsStore } from '@/stores/plants'
+import {
+  isValidCarePlant,
+  isValidCareAction,
+  isValidCareDate,
+  isValidCareNotes,
+} from '@/utils/validators'
 
 const careLogsStore = useCareLogsStore()
 const plantsStore = usePlantsStore()
@@ -183,6 +228,13 @@ const form = ref({
   notes: '',
 })
 
+const errors = ref({
+  plantId: '',
+  action: '',
+  date: '',
+  notes: '',
+})
+
 const typeItems = [
   { title: 'All', value: 'all', icon: 'mdi-filter-variant' },
   { title: 'Water', value: 'water', icon: 'mdi-water' },
@@ -193,15 +245,19 @@ const typeItems = [
 
 const plantItems = computed(() =>
   (plants.value || []).map((p) => ({
-    title:
-      p?.template?.commonName ||
-      p?.commonName ||
-      p?.name ||
-      p?.template?.species ||
-      'Plant',
+    title: p?.template?.commonName || p?.commonName || p?.name || p?.template?.species || 'Plant',
     value: p.id,
   })),
 )
+
+const ACTION_CLASS = {
+  water: 'water',
+  fertilize: 'fertilize',
+  prune: 'prune',
+  repot: 'repot',
+}
+
+const actionClass = (t) => ACTION_CLASS[t] || 'water'
 
 const iconByType = (t) =>
   t === 'water'
@@ -221,6 +277,9 @@ const labelByType = (t) =>
         ? 'Pruned'
         : 'Repotted'
 
+const labelChip = (t) =>
+  t === 'water' ? 'Water' : t === 'fertilize' ? 'Fertilize' : t === 'prune' ? 'Prune' : 'Repot'
+
 const uiLogs = computed(() =>
   (careLogs.value || []).map((c) => ({
     id: c.id,
@@ -234,9 +293,38 @@ const uiLogs = computed(() =>
 
 const plantNameById = (pid) => {
   const p = (plants.value || []).find((x) => x.id === pid)
-  return (
-    p?.template?.commonName || p?.commonName || p?.name || p?.template?.species || 'Plant'
-  )
+  return p?.template?.commonName || p?.commonName || p?.name || p?.template?.species || 'Plant'
+}
+
+const clearErrors = () => {
+  errors.value = { plantId: '', action: '', date: '', notes: '' }
+}
+
+const validateForm = () => {
+  clearErrors()
+  let ok = true
+
+  if (!isValidCarePlant(form.value.plantId)) {
+    errors.value.plantId = 'Please select a plant'
+    ok = false
+  }
+
+  if (!isValidCareAction(form.value.action)) {
+    errors.value.action = 'Please select an action'
+    ok = false
+  }
+
+  if (!isValidCareDate(form.value.date)) {
+    errors.value.date = 'Please choose a valid date'
+    ok = false
+  }
+
+  if (!isValidCareNotes(form.value.notes)) {
+    errors.value.notes = 'Notes must be at least 3 characters'
+    ok = false
+  }
+
+  return ok
 }
 
 const openAdd = () => {
@@ -247,6 +335,7 @@ const openAdd = () => {
     date: new Date().toISOString().slice(0, 10),
     notes: '',
   }
+  clearErrors()
   dialog.value = true
 }
 
@@ -258,12 +347,14 @@ const openEdit = (item) => {
     date: item.date || new Date().toISOString().slice(0, 10),
     notes: item.notes || '',
   }
+  clearErrors()
   dialog.value = true
 }
 
 const save = async () => {
+  if (!validateForm()) return
+
   const pid = form.value.plantId
-  if (!pid) return
 
   const payload = {
     plantId: pid,
@@ -273,11 +364,8 @@ const save = async () => {
     notes: (form.value.notes || '').trim(),
   }
 
-  if (editingId.value) {
-    await careLogsStore.updateCareLog(editingId.value, payload)
-  } else {
-    await careLogsStore.addCareLog(payload)
-  }
+  if (editingId.value) await careLogsStore.updateCareLog(editingId.value, payload)
+  else await careLogsStore.addCareLog(payload)
 
   dialog.value = false
 }
@@ -407,6 +495,97 @@ const grouped = computed(() => {
   margin-top: 6px;
   opacity: 0.72;
   font-weight: 700;
+}
+
+.card-actions-top {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.btn-edit,
+.btn-delete {
+  border-radius: 999px !important;
+  padding: 6px 12px;
+  font-weight: 900;
+  letter-spacing: 0.2px;
+  text-transform: none;
+  min-width: auto;
+}
+
+.btn-edit {
+  color: #2563eb;
+}
+
+.btn-delete {
+  color: #dc2626;
+}
+
+.btn-edit:hover {
+  background: rgba(37, 99, 235, 0.08);
+}
+
+.btn-delete:hover {
+  background: rgba(220, 38, 38, 0.08);
+}
+
+.action-chip {
+  font-weight: 800;
+  border-radius: 999px;
+  padding: 4px 10px;
+}
+
+.action-chip.water {
+  background: rgba(59, 130, 246, 0.12);
+  color: #1e40af;
+}
+
+.action-chip.fertilize {
+  background: rgba(34, 197, 94, 0.14);
+  color: #166534;
+}
+
+.action-chip.prune {
+  background: rgba(168, 85, 247, 0.14);
+  color: #6b21a8;
+}
+
+.action-chip.repot {
+  background: rgba(249, 115, 22, 0.18);
+  color: #9a3412;
+}
+
+.date-chip {
+  font-weight: 800;
+  border-radius: 999px;
+  padding: 4px 10px;
+  background: rgba(15, 23, 42, 0.08);
+  color: rgba(15, 23, 42, 0.8);
+}
+.notes {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 0.5;
+  font-style: italic;
+}
+.btn-primary {
+  background: #2e7d32;
+  color: white;
+  font-weight: 900;
+  letter-spacing: 0.2px;
+  text-transform: none;
+  padding: 10px 18px;
+  border-radius: 999px !important;
+}
+
+.btn-primary:hover {
+  filter: brightness(0.98);
+}
+.actions-row {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
 }
 
 @media (max-width: 960px) {

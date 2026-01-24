@@ -28,3 +28,20 @@ export const isValidLocationName = (name = '') => name.trim().length >= 3
 export const isValidRoom = (room = '') => !!room && String(room).trim().length > 0
 
 export const isValidLight = (light = '') => !!light && String(light).trim().length > 0
+
+// care
+export const isValidCarePlant = (plantId = '') => !!plantId && String(plantId).trim().length > 0
+
+export const isValidCareAction = (action = '') => !!action && String(action).trim().length > 0
+
+export const isValidCareDate = (date = '') => {
+  const v = String(date || '').trim()
+  if (!v) return false
+  return /^\d{4}-\d{2}-\d{2}$/.test(v)
+}
+
+export const isValidCareNotes = (notes = '') => {
+  const v = String(notes || '').trim()
+  return v.length === 0 || v.length >= 3
+}
+
