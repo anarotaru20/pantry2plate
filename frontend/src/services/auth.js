@@ -35,22 +35,7 @@ export async function register(email, password, profile) {
   return data
 }
 
-export async function getProfile() {
-  const token = localStorage.getItem('jwt')
-
-  const response = await fetch(`${API_URL}/profile`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  })
-
-  const data = await response.json()
-  if (!response.ok) throw new Error(data.message || 'Failed to load profile')
-
-  return data
-}
-
 export function logout() {
-  localStorage.removeItem('auth_user')
   localStorage.removeItem('jwt')
+  localStorage.removeItem('auth_user')
 }
