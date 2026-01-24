@@ -37,11 +37,7 @@
 
       <v-select
         v-model="sortBy"
-        :items="[
-          { title: 'Sort: Name', value: 'name' },
-          { title: 'Sort: Room', value: 'room' },
-          { title: 'Sort: Light', value: 'light' },
-        ]"
+        :items="sortItems"
         item-title="title"
         item-value="value"
         variant="outlined"
@@ -56,45 +52,44 @@
       <v-progress-circular indeterminate />
     </div>
 
+    <div v-else-if="filtered.length === 0" class="empty">
+      <div class="empty-ico">
+        <v-icon size="34">mdi-map-marker-outline</v-icon>
+      </div>
+      <div class="empty-title">No locations yet</div>
+      <div class="empty-sub">Add your first location to organize your plants.</div>
+      <v-btn rounded="xl" variant="outlined" class="mt-3" @click="openAdd">
+        <v-icon start>mdi-plus</v-icon>
+        Add location
+      </v-btn>
+    </div>
+
     <v-row v-else dense class="grid" style="row-gap: 12px">
       <v-col v-for="loc in filtered" :key="loc.id" cols="12" sm="6" md="4" lg="4">
         <BaseCard :title="loc.name" :subtitle="loc.room">
-          <template #menu>
-            <v-menu location="bottom end">
-              <template #activator="{ props }">
-                <v-btn v-bind="props" icon variant="text">
-                  <v-icon>mdi-dots-vertical</v-icon>
-                </v-btn>
-              </template>
-
-              <v-list density="compact">
-                <v-list-item @click="openEdit(loc)">
-                  <template #prepend><v-icon size="18">mdi-pencil</v-icon></template>
-                  <v-list-item-title>Edit</v-list-item-title>
-                </v-list-item>
-
-                <v-list-item @click="removeLoc(loc)">
-                  <template #prepend><v-icon size="18">mdi-delete</v-icon></template>
-                  <v-list-item-title>Delete</v-list-item-title>
-                </v-list-item>
-              </v-list>
-            </v-menu>
-          </template>
-
           <template #chips>
-            <v-chip size="small" variant="flat">
+            <v-chip size="small" variant="flat" :class="['light-chip', lightClass(loc.light)]">
               <v-icon start size="16">{{ iconByLight(loc.light) }}</v-icon>
               {{ loc.light || '—' }}
             </v-chip>
           </template>
 
-          {{ loc.notes }}
+          <div class="notes">
+            {{ (loc.notes || '').trim() || 'No description' }}
+          </div>
 
-          <template #actions>
-            <v-btn rounded="xl" variant="outlined" @click="openEdit(loc)">
-              Manage
-              <v-icon end>mdi-arrow-right</v-icon>
-            </v-btn>
+          <template #menu>
+            <div class="card-actions-top">
+              <v-btn size="small" variant="text" class="btn-edit" @click="openEdit(loc)">
+                <v-icon start size="16">mdi-pencil</v-icon>
+                Edit
+              </v-btn>
+
+              <v-btn size="small" variant="text" class="btn-delete" @click="removeLoc(loc)">
+                <v-icon start size="16">mdi-delete</v-icon>
+                Delete
+              </v-btn>
+            </div>
           </template>
         </BaseCard>
       </v-col>
@@ -112,7 +107,7 @@
 </template>
 
 <script setup>
-import { computed, ref, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useLocationsStore } from '@/stores/locations'
 import LocationDialog from '@/components/dialog/LocationDialog.vue'
@@ -128,14 +123,17 @@ const dialog = ref(false)
 const mode = ref('add')
 const selected = ref(null)
 
-const form = ref({
+const DEFAULT_FORM = Object.freeze({
   name: '',
   room: 'Living room',
   light: 'Medium light',
   notes: '',
 })
 
+const form = ref({ ...DEFAULT_FORM })
+
 const roomItems = ['Living room', 'Bedroom', 'Kitchen', 'Balcony', 'Bathroom', 'Office']
+
 const lightItems = [
   { title: 'Low light', value: 'Low light', icon: 'mdi-weather-night' },
   { title: 'Medium light', value: 'Medium light', icon: 'mdi-weather-partly-cloudy' },
@@ -143,41 +141,44 @@ const lightItems = [
   { title: 'Direct light', value: 'Direct light', icon: 'mdi-white-balance-sunny' },
 ]
 
-const iconByLight = (l) =>
-  l === 'Low light'
-    ? 'mdi-weather-night'
-    : l === 'Medium light'
-      ? 'mdi-weather-partly-cloudy'
-      : l === 'Bright light'
-        ? 'mdi-weather-sunny'
-        : l === 'Direct light'
-          ? 'mdi-white-balance-sunny'
-          : 'mdi-weather-partly-cloudy'
+const sortItems = [
+  { title: 'Sort: Name', value: 'name' },
+  { title: 'Sort: Room', value: 'room' },
+  { title: 'Sort: Light', value: 'light' },
+]
+
+const LIGHT_CLASS = {
+  'Low light': 'low',
+  'Medium light': 'medium',
+  'Bright light': 'bright',
+  'Direct light': 'direct',
+}
+
+const LIGHT_ICON = {
+  'Low light': 'mdi-weather-night',
+  'Medium light': 'mdi-weather-partly-cloudy',
+  'Bright light': 'mdi-weather-sunny',
+  'Direct light': 'mdi-white-balance-sunny',
+}
+
+const lightClass = (l) => LIGHT_CLASS[l] || ''
+const iconByLight = (l) => LIGHT_ICON[l] || 'mdi-weather-partly-cloudy'
 
 const filtered = computed(() => {
   const term = q.value.trim().toLowerCase()
-
   const list = (locations.value || []).filter((x) => {
     if (!term) return true
-    return (
-      (x.name || '').toLowerCase().includes(term) ||
-      (x.room || '').toLowerCase().includes(term) ||
-      (x.notes || '').toLowerCase().includes(term) ||
-      (x.light || '').toLowerCase().includes(term)
-    )
+    return [x.name, x.room, x.notes, x.light].some((v) => (v || '').toLowerCase().includes(term))
   })
 
-  if (sortBy.value === 'light')
-    return [...list].sort((a, b) => (a.light || '').localeCompare(b.light || ''))
-  if (sortBy.value === 'room')
-    return [...list].sort((a, b) => (a.room || '').localeCompare(b.room || ''))
-  return [...list].sort((a, b) => (a.name || '').localeCompare(b.name || ''))
+  const key = sortBy.value
+  return [...list].sort((a, b) => (a?.[key] || '').localeCompare(b?.[key] || ''))
 })
 
 const openAdd = () => {
   mode.value = 'add'
   selected.value = null
-  form.value = { name: '', room: 'Living room', light: 'Medium light', notes: '' }
+  form.value = { ...DEFAULT_FORM }
   dialog.value = true
 }
 
@@ -185,31 +186,31 @@ const openEdit = (loc) => {
   mode.value = 'edit'
   selected.value = loc
   form.value = {
-    name: loc.name || '',
-    room: loc.room || 'Living room',
-    light: loc.light || 'Medium light',
-    notes: loc.notes || '',
+    name: loc?.name || '',
+    room: loc?.room || DEFAULT_FORM.room,
+    light: loc?.light || DEFAULT_FORM.light,
+    notes: loc?.notes || '',
   }
   dialog.value = true
 }
 
+const normalizeLight = (v) => {
+  if (typeof v === 'object' && v) return v.value || v.title || ''
+  return v || ''
+}
+
 const save = async () => {
   const payload = {
-    name: form.value.name.trim(),
+    name: (form.value.name || '').trim(),
     room: form.value.room,
-    light: form.value.light,
-    notes: form.value.notes.trim(),
+    light: normalizeLight(form.value.light),
+    notes: (form.value.notes || '').trim(),
   }
 
-  if (!payload.name) return
-  if (!payload.room) return
-  if (!payload.light) return
+  if (!payload.name || !payload.room || !payload.light) return
 
-  if (mode.value === 'add') {
-    await store.addLocation(payload)
-  } else if (selected.value?.id) {
-    await store.updateLocation(selected.value.id, payload)
-  }
+  if (mode.value === 'add') await store.addLocation(payload)
+  else if (selected.value?.id) await store.updateLocation(selected.value.id, payload)
 
   dialog.value = false
   selected.value = null
@@ -220,9 +221,7 @@ const removeLoc = async (loc) => {
   await store.deleteLocation(loc.id)
 }
 
-onMounted(async () => {
-  await store.fetchLocations()
-})
+onMounted(() => store.fetchLocations())
 </script>
 
 <style scoped>
@@ -251,7 +250,9 @@ onMounted(async () => {
 }
 
 .add {
-  font-weight: 900;
+  font-weight: 700;
+  /* background: #2e7d32;
+  color: white; */
 }
 
 .controls {
@@ -271,9 +272,106 @@ onMounted(async () => {
   margin-top: 2px;
 }
 
+.empty {
+  margin-top: 40px;
+  border: 1px dashed rgba(15, 23, 42, 0.18);
+  border-radius: 18px;
+  padding: 22px;
+  background: rgba(255, 255, 255, 0.7);
+  text-align: center;
+}
+
+.empty-ico {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto;
+  display: grid;
+  place-items: center;
+  border-radius: 16px;
+  background: rgba(15, 23, 42, 0.06);
+}
+
+.empty-title {
+  margin-top: 10px;
+  font-weight: 950;
+  font-size: 1.05rem;
+}
+
+.empty-sub {
+  margin-top: 6px;
+  opacity: 0.72;
+  font-weight: 700;
+}
+
 @media (max-width: 960px) {
   .controls {
     grid-template-columns: 1fr;
   }
+}
+
+.notes {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 0.5;
+  font-style: italic;
+}
+
+.card-actions-top {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.btn-edit,
+.btn-delete {
+  border-radius: 999px !important;
+  padding: 6px 12px;
+  font-weight: 900;
+  letter-spacing: 0.2px;
+  text-transform: none;
+  min-width: auto;
+}
+
+.btn-edit {
+  color: #2563eb;
+}
+
+.btn-delete {
+  color: #dc2626;
+}
+
+.btn-edit:hover {
+  background: rgba(37, 99, 235, 0.08);
+}
+
+.btn-delete:hover {
+  background: rgba(220, 38, 38, 0.08);
+}
+
+.light-chip {
+  font-weight: 800;
+  border-radius: 999px;
+  padding: 4px 10px;
+}
+
+.light-chip.low {
+  background: rgba(59, 130, 246, 0.12);
+  color: #1e40af;
+}
+
+.light-chip.medium {
+  background: rgba(234, 179, 8, 0.18);
+  color: #854d0e;
+}
+
+.light-chip.bright {
+  background: rgba(249, 115, 22, 0.18);
+  color: #9a3412;
+}
+
+.light-chip.direct {
+  background: rgba(38, 220, 99, 0.18);
+  color: #1b994f;
 }
 </style>

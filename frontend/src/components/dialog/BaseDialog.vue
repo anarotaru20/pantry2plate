@@ -1,5 +1,9 @@
 <template>
-  <v-dialog :model-value="modelValue" :max-width="maxWidth" @update:modelValue="emit('update:modelValue', $event)">
+  <v-dialog
+    :model-value="modelValue"
+    :max-width="maxWidth"
+    @update:modelValue="emit('update:modelValue', $event)"
+  >
     <v-card rounded="2xl" class="dlg" elevation="0" :style="{ height, maxHeight: height }">
       <div class="dlg-h">
         <div>
@@ -17,9 +21,10 @@
       <div class="dlg-b">
         <slot />
       </div>
-<div class="dlg-actions">
-  <slot name="actions" />
-</div>
+
+      <div class="dlg-actions">
+        <slot name="actions" />
+      </div>
 
       <template v-if="$slots.footer">
         <v-divider class="my-2" />
@@ -47,8 +52,6 @@ const close = () => {
   emit('close')
 }
 </script>
-
-
 
 <style scoped>
 .dlg {
@@ -79,21 +82,14 @@ const close = () => {
 .dlg-b {
   flex: 1;
   overflow-y: auto;
-  padding: 10px 18px 16px;
+  padding: 10px 18px 8px;
   padding-right: 12px;
 }
 
-.dlg-f {
-  padding: 12px 18px 16px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
 .dlg-actions {
-  margin-top: 14px;
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-}
+  border-top: 1px solid rgba(15, 23, 42, 0.08);
+  padding: 14px 18px 16px;
 
+  display: block;
+}
 </style>
