@@ -3,7 +3,7 @@
     <template #actions>
       <div class="actions">
         <span class="hello">
-          Hello, <strong>{{ firstName }}</strong>
+          Hello, <strong>{{ helloName }}</strong>
         </span>
 
         <v-menu location="bottom end" offset="10">
@@ -90,16 +90,19 @@
 <script setup>
 import { computed, ref, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { logout } from '@/services/auth'
+import { useProfileStore } from '@/stores/profile'
+import { useAuthStore } from '@/stores/auth'
 import Navbar from '@/components/Navbar.vue'
 import Footer from '@/components/Footer.vue'
-import { auth } from '@/services/firebase'
 
 const router = useRouter()
 const route = useRoute()
 
+const profileStore = useProfileStore()
+const authStore = useAuthStore()
+
 const handleLogout = () => {
-  logout()
+  authStore.logout()
   router.push('/login')
 }
 
@@ -126,7 +129,6 @@ onBeforeUnmount(() => {
   if (timer) clearInterval(timer)
 })
 
-// Icon switches from sun to moon after 18:00
 const isNight = computed(() => {
   const h = now.value.getHours()
   return h < 6 || h >= 18
@@ -134,10 +136,13 @@ const isNight = computed(() => {
 
 const dayIcon = computed(() => (isNight.value ? 'mdi-weather-night' : 'mdi-weather-sunny'))
 
-// display user's first name
-const firstName = computed(
-  () => auth.currentUser?.displayName || auth.currentUser?.email?.split('@')[0] || 'there',
-)
+const helloName = computed(() => {
+  const p = profileStore.profile
+  const displayName = (p?.displayName || authStore.user?.displayName || '').trim()
+  const firstName = (p?.firstName || authStore.user?.firstName || '').trim()
+
+  return displayName || firstName || 'there'
+})
 
 const dateLabel = computed(() =>
   now.value.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }),
@@ -147,8 +152,6 @@ const timeLabel = computed(() =>
   now.value.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
 )
 </script>
-
-
 
 <style scoped>
 .actions {
@@ -195,21 +198,9 @@ const timeLabel = computed(() =>
   flex-direction: column;
   padding: 14px 12px 12px 14px;
   background:
-    radial-gradient(
-      1000px 700px at 50% 80%,
-      rgba(245, 200, 90, 0.2),
-      /* pastel yellow */ transparent 65%
-    ),
-    radial-gradient(
-      900px 600px at 88% 12%,
-      rgba(38, 206, 105, 0.26),
-      /* pastel green */ transparent 60%
-    ),
-    radial-gradient(
-      900px 600px at 12% 8%,
-      rgba(248, 66, 66, 0.418),
-      /* pastel red */ transparent 60%
-    ),
+    radial-gradient(1000px 700px at 50% 80%, rgba(245, 200, 90, 0.2), transparent 65%),
+    radial-gradient(900px 600px at 88% 12%, rgba(38, 206, 105, 0.26), transparent 60%),
+    radial-gradient(900px 600px at 12% 8%, rgba(248, 66, 66, 0.418), transparent 60%),
     linear-gradient(
       180deg,
       rgba(242, 240, 232, 0.97) 0%,
@@ -377,6 +368,7 @@ const timeLabel = computed(() =>
   opacity: 0.85;
   white-space: nowrap;
 }
+
 .profile-menu {
   border-radius: 16px;
   padding: 6px;
