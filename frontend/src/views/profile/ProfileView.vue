@@ -2,6 +2,7 @@
   <div class="page">
     <div class="hdr">
       <div>
+        <div class="title">Profile</div>
         <div class="sub">Manage your account and preferences</div>
       </div>
 
@@ -25,15 +26,15 @@
           <v-divider class="my-4" />
 
           <v-row dense>
-            <v-col cols="12" sm="6">
+            <v-col cols="12">
               <v-text-field
-                v-model="formName"
+                v-model="formDisplayName"
                 label="Display name"
                 variant="outlined"
                 density="comfortable"
                 rounded="xl"
                 prepend-inner-icon="mdi-account-circle"
-                placeholder="Your name"
+                placeholder="How you want to appear in the app"
               />
             </v-col>
 
@@ -48,10 +49,22 @@
                 readonly
               />
             </v-col>
+
+            <v-col cols="12" sm="6">
+              <v-text-field
+                v-model="formAddress"
+                label="Address"
+                variant="outlined"
+                density="comfortable"
+                rounded="xl"
+                prepend-inner-icon="mdi-map-marker-outline"
+                placeholder="City, street, optional"
+              />
+            </v-col>
           </v-row>
 
           <div class="hint">
-            Tip: You can change your display name anytime. Email changes require security checks.
+            Tip: Display name is shown across the app. Email changes require security checks.
           </div>
         </v-card>
 
@@ -66,15 +79,40 @@
 
           <v-divider class="my-4" />
 
-          <div class="rowline">
-            <div>
-              <div class="rowtitle">Password reset</div>
-              <div class="rowdesc">Send yourself an email to reset your password.</div>
-            </div>
+          <div class="rowtitle mb8">Change password</div>
+
+          <v-row dense>
+            <v-col cols="12" sm="6">
+              <v-text-field
+                v-model="newPassword"
+                label="New password"
+                variant="outlined"
+                density="comfortable"
+                rounded="xl"
+                prepend-inner-icon="mdi-lock-outline"
+                type="password"
+              />
+            </v-col>
+
+            <v-col cols="12" sm="6">
+              <v-text-field
+                v-model="confirmPassword"
+                label="Confirm password"
+                variant="outlined"
+                density="comfortable"
+                rounded="xl"
+                prepend-inner-icon="mdi-lock-check-outline"
+                type="password"
+              />
+            </v-col>
+          </v-row>
+
+          <div class="rowline mt8">
+            <div class="rowdesc">UI only for now. Later this will update Firebase Auth password.</div>
 
             <v-btn rounded="xl" variant="outlined" disabled>
-              <v-icon start>mdi-email-send-outline</v-icon>
-              Send email
+              <v-icon start>mdi-lock-reset</v-icon>
+              Update password
             </v-btn>
           </div>
 
@@ -112,13 +150,7 @@
               <div class="rowdesc">Choose how amounts are displayed.</div>
             </div>
 
-            <v-btn-toggle
-              v-model="units"
-              class="toggle"
-              rounded="xl"
-              mandatory
-              density="comfortable"
-            >
+            <v-btn-toggle v-model="units" class="toggle" rounded="xl" mandatory density="comfortable">
               <v-btn value="ml" rounded="xl">ml</v-btn>
               <v-btn value="oz" rounded="xl">oz</v-btn>
             </v-btn-toggle>
@@ -149,6 +181,20 @@
             <v-switch v-model="reminders" inset color="green" hide-details />
           </div>
 
+          <v-divider class="my-4" />
+
+          <div class="pref">
+            <div class="pref-l">
+              <div class="rowtitle">Time format</div>
+              <div class="rowdesc">Choose how time is shown.</div>
+            </div>
+
+            <v-btn-toggle v-model="timeFormat" class="toggle" rounded="xl" mandatory density="comfortable">
+              <v-btn value="24h" rounded="xl">24h</v-btn>
+              <v-btn value="12h" rounded="xl">12h</v-btn>
+            </v-btn-toggle>
+          </div>
+
           <div class="hint mt16">These settings are UI-only for now.</div>
         </v-card>
 
@@ -159,7 +205,7 @@
             </v-avatar>
 
             <div class="mini-txt">
-              <div class="mini-name">{{ firstName || 'Your name' }}</div>
+              <div class="mini-name">{{ formDisplayName || 'Your name' }}</div>
               <div class="mini-mail">{{ email }}</div>
             </div>
           </div>
@@ -173,15 +219,21 @@
 import { computed, ref } from 'vue'
 import { auth } from '@/services/firebase'
 
-const firstName = computed(() => auth.currentUser?.displayName || '')
 const email = computed(() => auth.currentUser?.email || '')
+const initialDisplayName = computed(() => auth.currentUser?.displayName || '')
 
-const formName = ref(firstName.value)
+const formDisplayName = ref(initialDisplayName.value)
+const formAddress = ref('')
+
+const newPassword = ref('')
+const confirmPassword = ref('')
 
 const units = ref('ml')
 const dueSoonDays = ref(1)
 const reminders = ref(true)
+const timeFormat = ref('24h')
 </script>
+
 
 <style scoped>
 .page {
@@ -333,4 +385,7 @@ const reminders = ref(true)
   opacity: 0.7;
   font-weight: 650;
 }
+.mb8 { margin-bottom: 8px; }
+.mt8 { margin-top: 8px; }
+
 </style>
