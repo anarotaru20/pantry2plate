@@ -292,7 +292,7 @@ const chips = computed(() => {
     out.push({ key: `tag-${i}-${t}`, label: t, icon: 'mdi-tag', color: 'grey' })
   })
 
-  return out.slice(0, 5)
+  return out.slice(0, 3)
 })
 </script>
 
