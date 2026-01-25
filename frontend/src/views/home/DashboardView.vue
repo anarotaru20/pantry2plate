@@ -608,7 +608,7 @@ onMounted(async () => {
 
 .timeline {
   display: grid;
-  gap: 16px;
+  gap: 16.5px;
 }
 
 .t-item {
