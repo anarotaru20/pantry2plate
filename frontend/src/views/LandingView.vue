@@ -77,19 +77,9 @@ const carouselItems = [
     text: 'Remember the best spot for each plant based on light needs.',
   },
   {
-    icon: 'mdi-flask-outline',
-    title: 'Fertilize smarter',
-    text: 'Track feeding dates and what worked best for healthier leaves.',
-  },
-  {
     icon: 'mdi-leaf',
-    title: 'Care recommendations',
-    text: 'Get tips based on your plants and your routine.',
-  },
-  {
-    icon: 'mdi-format-list-checks',
-    title: 'Supplies checklist',
-    text: 'Generate a list for soil, pots, nutrients, and anything you’re missing.',
+    title: 'Care',
+    text: 'Keep track of how you care for your plants',
   },
 ]
 </script>
