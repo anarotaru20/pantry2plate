@@ -51,7 +51,7 @@
             <div class="card-subtitle">Continue your plant care journey.</div>
           </div>
 
-          <v-form @submit.prevent="handleLogin">
+          <v-form ref="formRef" @submit.prevent="handleLogin">
             <v-text-field
               v-model="email"
               label="Email"
@@ -60,6 +60,8 @@
               rounded="lg"
               class="mb-3"
               autocomplete="email"
+              :rules="emailRules"
+              @update:model-value="message = ''"
             />
 
             <v-text-field
@@ -73,6 +75,8 @@
               autocomplete="current-password"
               :append-inner-icon="showPassword ? 'mdi-eye-off-outline' : 'mdi-eye-outline'"
               @click:append-inner="showPassword = !showPassword"
+              :rules="passwordRules"
+              @update:model-value="message = ''"
             />
 
             <v-btn
@@ -109,9 +113,12 @@ import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import Navbar from '@/components/Navbar.vue'
+import { isValidEmail, isStrongPassword, isValidLoginForm } from '@/utils/validators'
 
 const router = useRouter()
 const auth = useAuthStore()
+
+const formRef = ref(null)
 
 const email = ref('')
 const password = ref('')
@@ -120,14 +127,29 @@ const showPassword = ref(false)
 const message = ref('')
 const loading = ref(false)
 
+const emailRules = [
+  (v) => (!!String(v || '').trim() ? true : 'Email is required'),
+  (v) => (isValidEmail(String(v || '')) ? true : 'Please enter a valid email'),
+]
+
+const passwordRules = [
+  (v) => (!!String(v || '') ? true : 'Password is required'),
+  (v) => (isStrongPassword(String(v || '')) ? true : 'Password must be at least 6 characters'),
+]
+
 const canSubmit = computed(() => {
-  return email.value.trim().length > 0 && password.value.length > 0 && !loading.value
+  return (
+    isValidLoginForm({ email: email.value, password: password.value }) &&
+    !loading.value
+  )
 })
 
 const handleLogin = async () => {
   message.value = ''
-  loading.value = true
+  const res = await formRef.value?.validate?.()
+  if (res && res.valid === false) return
 
+  loading.value = true
   try {
     await auth.login(email.value.trim(), password.value)
     router.push('/dashboard')

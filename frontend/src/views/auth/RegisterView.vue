@@ -20,7 +20,7 @@
             <div class="card-subtitle">Start your plant care space in seconds.</div>
           </div>
 
-          <v-form @submit.prevent="handleRegister">
+          <v-form ref="formRef" validate-on="blur" @submit.prevent="handleRegister">
             <v-row dense>
               <v-col cols="6">
                 <v-text-field
@@ -29,6 +29,7 @@
                   prepend-inner-icon="mdi-account-outline"
                   variant="outlined"
                   rounded="lg"
+                  :rules="nameRules"
                 />
               </v-col>
 
@@ -39,6 +40,7 @@
                   prepend-inner-icon="mdi-account-outline"
                   variant="outlined"
                   rounded="lg"
+                  :rules="nameRules"
                 />
               </v-col>
             </v-row>
@@ -52,6 +54,7 @@
                   prepend-inner-icon="mdi-calendar-blank"
                   variant="outlined"
                   rounded="lg"
+                  :rules="[required]"
                 />
               </v-col>
 
@@ -62,6 +65,7 @@
                   :items="months"
                   variant="outlined"
                   rounded="lg"
+                  :rules="[required]"
                 />
               </v-col>
 
@@ -72,6 +76,7 @@
                   :items="Array.from({ length: 80 }, (_, i) => new Date().getFullYear() - i)"
                   variant="outlined"
                   rounded="lg"
+                  :rules="[required]"
                 />
               </v-col>
             </v-row>
@@ -84,6 +89,7 @@
               rounded="lg"
               class="mb-3"
               autocomplete="email"
+              :rules="emailRules"
             />
 
             <v-row dense>
@@ -98,6 +104,7 @@
                   variant="outlined"
                   rounded="lg"
                   autocomplete="new-password"
+                  :rules="passwordRules"
                 />
               </v-col>
 
@@ -112,6 +119,7 @@
                   variant="outlined"
                   rounded="lg"
                   autocomplete="new-password"
+                  :rules="confirmPasswordRules"
                 />
               </v-col>
             </v-row>
@@ -177,9 +185,17 @@ import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import Navbar from '@/components/Navbar.vue'
+import {
+  isValidAuthEmail,
+  isValidAuthPassword,
+  isValidRegisterConfirmPassword,
+  isValidRegisterDisplayName,
+} from '@/utils/validators'
 
 const router = useRouter()
 const auth = useAuthStore()
+
+const formRef = ref(null)
 
 const firstName = ref('')
 const lastName = ref('')
@@ -210,6 +226,30 @@ const months = [
   'December',
 ]
 
+const required = (v) => !!String(v ?? '').trim() || 'Required'
+
+const nameRules = [
+  (v) => required(v),
+  (v) => isValidRegisterDisplayName(String(v ?? '')) || 'Min 3 characters',
+]
+
+const emailRules = [
+  (v) => required(v),
+  (v) => isValidAuthEmail(String(v ?? '')) || 'Invalid email',
+]
+
+const passwordRules = [
+  (v) => required(v),
+  (v) => isValidAuthPassword(String(v ?? '')) || 'Min 6 characters',
+]
+
+const confirmPasswordRules = [
+  (v) => required(v),
+  (v) =>
+    isValidRegisterConfirmPassword(password.value, String(v ?? '')) ||
+    'Passwords must match',
+]
+
 const monthIndex = computed(() => months.indexOf(month.value))
 
 const birthDateIso = computed(() => {
@@ -221,25 +261,24 @@ const birthDateIso = computed(() => {
 
 const canSubmit = computed(() => {
   return (
-    email.value.trim().length > 0 &&
-    firstName.value.trim().length > 0 &&
-    lastName.value.trim().length > 0 &&
-    password.value.length > 0 &&
-    confirmPassword.value.length > 0 &&
+    isValidAuthEmail(email.value) &&
+    isValidRegisterDisplayName(firstName.value) &&
+    isValidRegisterDisplayName(lastName.value) &&
+    isValidAuthPassword(password.value) &&
+    isValidRegisterConfirmPassword(password.value, confirmPassword.value) &&
+    birthDateIso.value &&
     !loading.value
   )
 })
 
 const handleRegister = async () => {
   message.value = ''
+  const res = await formRef.value?.validate?.()
+  if (res && res.valid === false) return
+
   loading.value = true
 
   try {
-    if (password.value !== confirmPassword.value) {
-      message.value = 'Passwords do not match'
-      return
-    }
-
     const profile = {
       firstName: firstName.value.trim(),
       lastName: lastName.value.trim(),

@@ -1,4 +1,4 @@
-//profile
+// profile
 export const isValidEmail = (email = '') => {
   const value = email.trim()
   if (!value) return false
@@ -21,6 +21,33 @@ export const isValidDisplayName = (name = '') => {
 export const isValidAddress = (address = '') => {
   return address.trim().length >= 3
 }
+
+// auth
+export const isValidAuthEmail = (email = '') => isValidEmail(email)
+
+export const isValidAuthPassword = (password = '') => {
+  const v = String(password || '')
+  return v.length >= 6
+}
+
+export const isValidRegisterDisplayName = (name = '') => isValidDisplayName(name)
+
+export const isValidRegisterConfirmPassword = (password = '', confirm = '') =>
+  doPasswordsMatch(password, confirm)
+
+export const isValidLoginForm = ({ email = '', password = '' } = {}) =>
+  isValidAuthEmail(email) && isValidAuthPassword(password)
+
+export const isValidRegisterForm = ({
+  email = '',
+  password = '',
+  confirmPassword = '',
+  displayName = '',
+} = {}) =>
+  isValidAuthEmail(email) &&
+  isValidAuthPassword(password) &&
+  isValidRegisterConfirmPassword(password, confirmPassword) &&
+  isValidRegisterDisplayName(displayName)
 
 // locations
 export const isValidLocationName = (name = '') => name.trim().length >= 3
