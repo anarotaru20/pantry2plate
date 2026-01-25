@@ -173,7 +173,6 @@ const allTags = computed(() => {
 })
 
 const shownTags = computed(() => allTags.value.slice(0, 2))
-const moreTagsCount = computed(() => Math.max(0, allTags.value.length - shownTags.value.length))
 
 const normalizeDate = (v) => {
   if (!v) return null
@@ -269,7 +268,9 @@ const statusChip = computed(() => {
   return { key: 'status', label: 'OK', icon: 'mdi-check-circle', color: 'green' }
 })
 
-const chips = computed(() => {
+const maxChips = 3
+
+const allChips = computed(() => {
   const p = props.plant || {}
   const out = []
 
@@ -285,15 +286,29 @@ const chips = computed(() => {
   }
 
   if (p.species) {
-    out.push({ key: 'species', label: p.species, icon: 'mdi-leaf', color: 'green' })
+    out.push({
+      key: 'species',
+      label: p.species,
+      icon: 'mdi-leaf',
+      color: 'green',
+    })
   }
 
-  shownTags.value.forEach((t, i) => {
-    out.push({ key: `tag-${i}-${t}`, label: t, icon: 'mdi-tag', color: 'grey' })
+  allTags.value.forEach((t, i) => {
+    out.push({
+      key: `tag-${i}-${t}`,
+      label: t,
+      icon: 'mdi-tag',
+      color: 'grey',
+    })
   })
 
-  return out.slice(0, 3)
+  return out
 })
+
+const chips = computed(() => allChips.value.slice(0, maxChips))
+
+const moreTagsCount = computed(() => Math.max(0, allChips.value.length - chips.value.length))
 </script>
 
 <style scoped>
