@@ -77,7 +77,12 @@
       </div>
 
       <div class="actions">
-        <v-btn rounded="xl" variant="outlined" class="btn btn-edit" @click.stop="emit('edit', plant)">
+        <v-btn
+          rounded="xl"
+          variant="outlined"
+          class="btn btn-edit"
+          @click.stop="emit('edit', plant)"
+        >
           <v-icon start>mdi-pencil</v-icon>
           Edit
         </v-btn>
@@ -128,7 +133,10 @@ const UNSAFE = new Set([
   'fiddle leaf fig',
 ])
 
-const norm = (s) => String(s || '').trim().toLowerCase()
+const norm = (s) =>
+  String(s || '')
+    .trim()
+    .toLowerCase()
 
 const toBool = (v) => {
   if (v === true) return true
@@ -154,11 +162,7 @@ const derivePetSafe = (name) => {
 const resolvedPetSafe = computed(() => {
   const p = props.plant || {}
   const direct =
-    toBool(p.petSafe) ??
-    toBool(p.pet_safe) ??
-    toBool(p.isPetSafe) ??
-    toBool(p.is_pet_safe) ??
-    null
+    toBool(p.petSafe) ?? toBool(p.pet_safe) ?? toBool(p.isPetSafe) ?? toBool(p.is_pet_safe) ?? null
   if (direct !== null) return direct
   return derivePetSafe(p.commonName) ?? derivePetSafe(p.name) ?? derivePetSafe(p.species) ?? null
 })
@@ -171,9 +175,105 @@ const allTags = computed(() => {
 const shownTags = computed(() => allTags.value.slice(0, 2))
 const moreTagsCount = computed(() => Math.max(0, allTags.value.length - shownTags.value.length))
 
+const normalizeDate = (v) => {
+  if (!v) return null
+  if (v instanceof Date) return v
+  if (typeof v === 'string') {
+    if (/^\d{4}-\d{2}-\d{2}$/.test(v)) return v
+    const d = new Date(v)
+    return Number.isNaN(d.getTime()) ? null : d
+  }
+  if (typeof v === 'number') {
+    const d = new Date(v)
+    return Number.isNaN(d.getTime()) ? null : d
+  }
+  if (typeof v === 'object' && typeof v.seconds === 'number') {
+    const d = new Date(v.seconds * 1000)
+    return Number.isNaN(d.getTime()) ? null : d
+  }
+  if (typeof v === 'object' && typeof v.toDate === 'function') {
+    const d = v.toDate()
+    return d instanceof Date && !Number.isNaN(d.getTime()) ? d : null
+  }
+  return null
+}
+
+const localIsoDate = (d = new Date()) => {
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
+
+const toIsoDate = (v) => {
+  const d = normalizeDate(v)
+  if (!d) return ''
+  if (typeof d === 'string') return d
+  return localIsoDate(d)
+}
+
+const startOfDayIso = (d = new Date()) => localIsoDate(d)
+
+const addDaysIso = (isoDate, days) => {
+  const d = new Date(isoDate + 'T00:00:00')
+  d.setDate(d.getDate() + Number(days || 0))
+  return localIsoDate(d)
+}
+
+const diffDays = (fromIso, toIso) => {
+  const a = new Date(fromIso + 'T00:00:00').getTime()
+  const b = new Date(toIso + 'T00:00:00').getTime()
+  return Math.round((b - a) / 86400000)
+}
+
+const lastIsoOf = (p) =>
+  toIsoDate(p?._raw?.timestamps?.lastWateredAt) ||
+  toIsoDate(p?._raw?.lastWateredAt) ||
+  toIsoDate(p?.timestamps?.lastWateredAt) ||
+  toIsoDate(p?.lastWateredAt) ||
+  ''
+
+const everyDaysOf = (p) => Number(p?.waterEveryDays ?? p?._raw?.settings?.waterEveryDays ?? 7)
+
+const statusFromDates = computed(() => {
+  const p = props.plant || {}
+  const today = startOfDayIso()
+  const last = lastIsoOf(p) || today
+  const every = everyDaysOf(p)
+  const due = addDaysIso(last, every)
+  const d = diffDays(today, due)
+  if (d < 0) return 'needs'
+  if (d === 0) return 'today'
+  if (d === 1) return 'due'
+  return 'ok'
+})
+
+const status = computed(() => {
+  const s = String(props.plant?.status || '')
+    .trim()
+    .toLowerCase()
+  if (['needs', 'today', 'due', 'ok'].includes(s)) return s
+  return statusFromDates.value
+})
+
+const statusChip = computed(() => {
+  if (status.value === 'needs') {
+    return { key: 'status', label: 'Needs water', icon: 'mdi-alert', color: 'red' }
+  }
+  if (status.value === 'today') {
+    return { key: 'status', label: 'Today', icon: 'mdi-water', color: '#2563eb' }
+  }
+  if (status.value === 'due') {
+    return { key: 'status', label: 'Due soon', icon: 'mdi-calendar', color: '#fb8c00' }
+  }
+  return { key: 'status', label: 'OK', icon: 'mdi-check-circle', color: 'green' }
+})
+
 const chips = computed(() => {
   const p = props.plant || {}
   const out = []
+
+  out.push(statusChip.value)
 
   if (resolvedPetSafe.value !== null) {
     out.push({

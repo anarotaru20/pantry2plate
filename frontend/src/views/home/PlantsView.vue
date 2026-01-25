@@ -29,6 +29,7 @@
         :items="[
           { title: 'All', value: 'all' },
           { title: 'OK', value: 'ok' },
+          { title: 'Today', value: 'today' },
           { title: 'Due soon', value: 'due' },
           { title: 'Needs water', value: 'needs' },
         ]"
@@ -43,14 +44,16 @@
       />
 
       <v-select
-        v-model="location"
-        :items="locations"
+        v-model="room"
+        :items="roomFilterItems"
+        item-title="title"
+        item-value="value"
         variant="outlined"
         density="comfortable"
         rounded="xl"
         hide-details
         class="sel"
-        label="Location"
+        label="Room"
       />
     </div>
 
@@ -92,7 +95,8 @@
       <v-card rounded="2xl">
         <v-card-title class="font-weight-black">Delete plant?</v-card-title>
         <v-card-text>
-          This will permanently delete <strong>{{ plantToDelete?.name }}</strong>.
+          This will permanently delete <strong>{{ plantToDelete?.name }}</strong
+          >.
         </v-card-text>
         <v-card-actions>
           <v-spacer />
@@ -125,16 +129,20 @@
 
 <script setup>
 import { computed, ref, onMounted } from 'vue'
+import { storeToRefs } from 'pinia'
 import MyPlantCard from '@/components/MyPlantCard.vue'
 import PlantDetailsDialog from '@/components/dialog/PlantDetailsDialog.vue'
 import PlantCatalogDialog from '@/components/dialog/PlantCatalogDialog.vue'
 import { usePlantsStore } from '@/stores/plants'
+import { useLocationsStore } from '@/stores/locations'
 
 const plantsStore = usePlantsStore()
+const locationsStore = useLocationsStore()
+const { locations: userLocations } = storeToRefs(locationsStore)
 
 const q = ref('')
 const status = ref('all')
-const location = ref('all')
+const room = ref('all')
 
 const addDialog = ref(false)
 const detailsDialog = ref(false)
@@ -150,10 +158,37 @@ const form = ref({
   photoUrl: '',
 })
 
-const locationItems = ['Living', 'Balcony', 'Kitchen', 'Bedroom']
+const roomItems = ['Living room', 'Bedroom', 'Kitchen', 'Balcony', 'Bathroom', 'Office']
 
-onMounted(() => {
-  plantsStore.fetchPlants()
+onMounted(async () => {
+  await Promise.all([plantsStore.fetchPlants(), locationsStore.fetchLocations?.()])
+})
+
+const locationItems = computed(() => {
+  const names = (userLocations.value || [])
+    .map((l) => (typeof l === 'string' ? l : l?.name))
+    .filter(Boolean)
+    .map((v) => String(v).trim())
+    .filter(Boolean)
+
+  const uniq = Array.from(new Set(names))
+  return uniq.length ? uniq : roomItems
+})
+
+const roomFilterItems = computed(() => [
+  { title: 'All', value: 'all' },
+  ...roomItems.map((x) => ({ title: x, value: x })),
+])
+
+const roomByLocationName = computed(() => {
+  const m = new Map()
+  for (const l of userLocations.value || []) {
+    if (!l) continue
+    const name = String(l?.name || '').trim()
+    const r = String(l?.room || '').trim()
+    if (name && r) m.set(name, r)
+  }
+  return m
 })
 
 const resetAddState = () => {
@@ -203,7 +238,6 @@ const saveNewPlant = async () => {
     waterEveryDays: Number(form.value.waterEveryDays),
     notes: form.value.notes,
     photoUrl: form.value.photoUrl,
-
     petSafe: petSafeVal,
     tags: tpl.tags ?? [],
     light: tpl.light ?? null,
@@ -216,32 +250,106 @@ const saveNewPlant = async () => {
   resetAddState()
 }
 
-const locations = computed(() => {
-  const locs = plantsStore.plants.map((p) => p?.settings?.location).filter(Boolean)
-  return ['all', ...Array.from(new Set(locs))]
-})
+const localIsoDate = (d = new Date()) => {
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
+
+const startOfDayIso = (d = new Date()) => localIsoDate(d)
+
+const normalizeDate = (v) => {
+  if (!v) return null
+  if (v instanceof Date) return v
+  if (typeof v === 'string') {
+    if (/^\d{4}-\d{2}-\d{2}$/.test(v)) return v
+    const d = new Date(v)
+    return Number.isNaN(d.getTime()) ? null : d
+  }
+  if (typeof v === 'number') {
+    const d = new Date(v)
+    return Number.isNaN(d.getTime()) ? null : d
+  }
+  if (typeof v === 'object' && typeof v.seconds === 'number') {
+    const d = new Date(v.seconds * 1000)
+    return Number.isNaN(d.getTime()) ? null : d
+  }
+  if (typeof v === 'object' && typeof v.toDate === 'function') {
+    const d = v.toDate()
+    return d instanceof Date && !Number.isNaN(d.getTime()) ? d : null
+  }
+  return null
+}
+
+const toIsoDate = (v) => {
+  const d = normalizeDate(v)
+  if (!d) return ''
+  if (typeof d === 'string') return d
+  return localIsoDate(d)
+}
+
+const addDaysIso = (isoDate, days) => {
+  const d = new Date(isoDate + 'T00:00:00')
+  d.setDate(d.getDate() + Number(days || 0))
+  return localIsoDate(d)
+}
+
+const diffDays = (fromIso, toIso) => {
+  const a = new Date(fromIso + 'T00:00:00').getTime()
+  const b = new Date(toIso + 'T00:00:00').getTime()
+  return Math.round((b - a) / 86400000)
+}
+
+const lastIsoOf = (p) =>
+  toIsoDate(p?.timestamps?.lastWateredAt) ||
+  toIsoDate(p?.lastWateredAt) ||
+  toIsoDate(p?.timestamps?.updatedAt) ||
+  toIsoDate(p?.timestamps?.createdAt) ||
+  toIsoDate(p?.updatedAt) ||
+  toIsoDate(p?.createdAt) ||
+  ''
+
+const everyDaysOf = (p) => Number(p?.settings?.waterEveryDays || 7)
+
+const computeStatus = (raw) => {
+  const today = startOfDayIso()
+  const last = lastIsoOf(raw) || today
+  const every = everyDaysOf(raw)
+  const due = addDaysIso(last, every)
+  const d = diffDays(today, due)
+  if (d < 0) return 'needs'
+  if (d === 0) return 'today'
+  if (d === 1) return 'due'
+  return 'ok'
+}
 
 const normalizedPlants = computed(() =>
-  (plantsStore.plants || []).map((p) => ({
-    id: p.id,
-    name: p?.commonName ?? p?.template?.commonName ?? p?.template?.common_name ?? 'Plant',
-    location: p?.settings?.location || '',
-    waterEveryDays: p?.settings?.waterEveryDays ?? 0,
-    note: p?.settings?.notes || '',
-    photoUrl: p?.photoUrl ?? p?.template?.imageUrl ?? '',
-    status: 'ok',
-    petSafe:
-      p?.petSafe ??
-      p?.pet_safe ??
-      p?.template?.petSafe ??
-      p?.template?.pet_safe ??
-      p?.template?.isPetSafe ??
-      null,
-    tags: p?.tags ?? p?.template?.tags ?? [],
-    light: p?.light ?? p?.template?.light ?? null,
-    species: p?.species ?? p?.template?.species ?? null,
-    _raw: p,
-  })),
+  (plantsStore.plants || []).map((p) => {
+    const locationName = p?.settings?.location || ''
+    const roomName = roomByLocationName.value.get(locationName) || locationName
+    return {
+      id: p.id,
+      name: p?.commonName ?? p?.template?.commonName ?? p?.template?.common_name ?? 'Plant',
+      location: locationName,
+      room: roomName,
+      waterEveryDays: p?.settings?.waterEveryDays ?? 0,
+      note: p?.settings?.notes || '',
+      photoUrl: p?.photoUrl ?? p?.template?.imageUrl ?? '',
+      status: computeStatus(p),
+      petSafe:
+        p?.petSafe ??
+        p?.pet_safe ??
+        p?.template?.petSafe ??
+        p?.template?.pet_safe ??
+        p?.template?.isPetSafe ??
+        null,
+      tags: p?.tags ?? p?.template?.tags ?? [],
+      light: p?.light ?? p?.template?.light ?? null,
+      species: p?.species ?? p?.template?.species ?? null,
+      _raw: p,
+    }
+  }),
 )
 
 const filtered = computed(() => {
@@ -249,11 +357,17 @@ const filtered = computed(() => {
   return normalizedPlants.value.filter((p) => {
     const matchesQ =
       !term ||
-      String(p.name || '').toLowerCase().includes(term) ||
-      String(p.location || '').toLowerCase().includes(term)
+      String(p.name || '')
+        .toLowerCase()
+        .includes(term) ||
+      String(p.room || '')
+        .toLowerCase()
+        .includes(term)
+
     const matchesStatus = status.value === 'all' || p.status === status.value
-    const matchesLoc = location.value === 'all' || p.location === location.value
-    return matchesQ && matchesStatus && matchesLoc
+    const matchesRoom = room.value === 'all' || p.room === room.value
+
+    return matchesQ && matchesStatus && matchesRoom
   })
 })
 
@@ -331,6 +445,8 @@ const confirmDelete = async () => {
   }
 }
 </script>
+
+
 
 <style scoped>
 .page {
